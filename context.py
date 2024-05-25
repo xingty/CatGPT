@@ -51,6 +51,7 @@ session = Session()
 profiles = UserProfile()
 config = Configuration()
 bot: AsyncTeleBot | None = None
+bot_name = None
 
 
 async def init(options):
@@ -78,3 +79,10 @@ async def init(options):
 
     if config.proxy_url is not None:
         asyncio_helper.proxy = config.proxy_url
+
+
+async def get_bot_name():
+    global bot_name
+    if bot_name is None:
+        bot_name = "@" + (await bot.get_me()).username
+    return bot_name
