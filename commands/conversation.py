@@ -70,6 +70,15 @@ async def handle_share_convo(
     real_op = segs[0]
 
     if real_op == "share":
+        if not config.share_info:
+            await bot.send_message(
+                chat_id=chat_id,
+                reply_to_message_id=msg_id,
+                parse_mode="MarkdownV2",
+                text=escape(f"Please set share info in config")
+            )
+            return
+
         convo_id = segs[1]
         convo = session.get_convo(uid, convo_id)
         if convo is None:
