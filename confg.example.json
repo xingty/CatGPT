@@ -1,0 +1,6 @@
+{
+  "tg_token": "YOUR_TELEGRAM_BOT_TOKEN",
+  "access_key": "Specify Access Key to use this bot",
+  "proxy": "http://proxy:port",
+  "endpoint": "/tmp/etc/providers.json"
+}

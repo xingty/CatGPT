@@ -1,0 +1,104 @@
+import json
+
+from telebot.async_telebot import AsyncTeleBot
+from telebot.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
+from utils.md2tgmd import escape
+from context import session, profiles, config
+
+
+def get_convo(uid: str):
+    profile = profiles.load(uid)
+    convo_id = profile.get("conversation_id")
+    convo = session.get_convo(uid, convo_id)
+
+    return convo
+
+
+async def handle_revoke(message: Message, bot: AsyncTeleBot):
+    uid = str(message.from_user.id)
+    convo = get_convo(uid)
+    if convo is None:
+        await bot.reply_to(message, "Please select a conversation to use.")
+        return
+
+    messages = convo.get("context", [])
+    if len(messages) < 2:
+        await bot.reply_to(message, "Could not find any message in current conversation")
+        return
+
+    context = f'{message.message_id}:{message.chat.id}:{message.from_user.id}'
+    keyboard = [
+        [
+            InlineKeyboardButton("Yes", callback_data=f'revoke:yes:{context}'),
+            InlineKeyboardButton("No", callback_data=f'revoke:no:{context}'),
+        ],
+    ]
+
+    revoke_list = [messages[-2], messages[-1]]
+    content = ''
+    for m in revoke_list:
+        content += f'### {m["role"]}\n{m["content"]}\n\n'
+
+    content = f'Are you sure? This operation will revoke the messages below:\n\n{content}'
+
+    await bot.send_message(
+        chat_id=message.chat.id,
+        text=escape(content),
+        parse_mode="MarkdownV2",
+        reply_markup=InlineKeyboardMarkup(keyboard)
+    )
+
+
+async def do_revoke(bot: AsyncTeleBot, operation: str, msg_id: int, chat_id: int, uid: str, message: Message):
+    if operation != 'yes':
+        await bot.delete_message(chat_id, msg_id)
+        return
+
+    convo = get_convo(uid)
+    if convo is None:
+        await bot.send_message(
+            chat_id=chat_id,
+            text="Conversation not found",
+            reply_to_message_id=msg_id
+        )
+        return
+
+    messages = convo.get("context", [])
+    if len(messages) < 2:
+        await bot.send_message(
+            chat_id=chat_id,
+            text="Could not find any message in current conversation",
+            reply_to_message_id=msg_id
+        )
+        return
+
+    answer = messages.pop()
+    question = messages.pop()
+    revoke_list = [question, answer]
+
+    content = ''
+    for m in revoke_list:
+        content += f'### {m["role"]}\n{m["content"]}\n\n'
+
+    await bot.send_message(
+        chat_id=chat_id,
+        text=escape(content),
+        reply_to_message_id=msg_id,
+        parse_mode="MarkdownV2"
+    )
+    session.sync_convo(uid)
+    for m in revoke_list:
+        if 'message_id' in m and 'chat_id' in m:
+            await bot.delete_message(m['chat_id'], m['message_id'])
+
+
+def register(bot: AsyncTeleBot, decorator) -> None:
+    handler = decorator(handle_revoke)
+    bot.register_message_handler(handler, pass_bot=True, commands=['revoke'])
+
+
+action = {
+    "name": 'revoke',
+    "description": 'Revoke message',
+    "handler": do_revoke,
+}
