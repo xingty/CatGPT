@@ -39,6 +39,10 @@ async def handle_key(message: Message, bot: AsyncTeleBot):
     elif compare(message.text.replace('/key ', ''), config.access_key):
         enroll(uid)
         msg = 'successful!'
+        await bot.delete_message(
+            chat_id=message.chat.id,
+            message_id=message.message_id
+        )
     else:
         msg = 'Invalid key. Please enter a valid key to proceed.'
 
