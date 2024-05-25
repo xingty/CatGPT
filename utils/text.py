@@ -1,3 +1,5 @@
+from telebot.types import Message
+
 MAX_TEXT_LENGTH = 3900
 
 
@@ -40,3 +42,18 @@ def split_to_segments(text: str, search_result: str, length: int = MAX_TEXT_LENG
         segments[-1] = segments[-1] + '\n\n' + search_result
 
     return segments
+
+
+def get_strip_text(message: Message) -> str:
+    text = message.text.strip()
+    if message.chat.type == "private":
+        return text
+
+    if not text.startswith("@"):
+        return text
+
+    index = text.find(" ")
+    if index == -1:
+        return text
+
+    return text[index + 1:]
