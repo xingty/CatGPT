@@ -5,6 +5,7 @@ from pathlib import Path
 import json
 import random
 
+
 class Configuration:
 
     def __init__(self):

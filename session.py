@@ -11,6 +11,8 @@ class Session:
 
     def _init_context(self):
         self.session_path = Path(__file__).parent.joinpath("sessions")
+        if not self.session_path.exists():
+            self.session_path.mkdir(parents=True, exist_ok=True)
 
         for item in self.session_path.iterdir():
             if not item.is_file():
