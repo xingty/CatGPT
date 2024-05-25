@@ -1,12 +1,33 @@
 from telebot.async_telebot import AsyncTeleBot
 from telebot.types import Message
-from context import session, profiles, config
+from context import session, profiles, config, get_bot_name
 from ask import ask_stream, ask
 from utils.md2tgmd import escape
+from utils.text import get_strip_text
 import time
 
 
+async def is_mention_me(message: Message) -> bool:
+    if message.entities is None:
+        return False
+    bot_name = await get_bot_name()
+
+    text = message.text
+    for entity in message.entities:
+        if entity.type == "mention":
+            who = text[entity.offset:entity.offset + entity.length]
+            if who == bot_name:
+                return True
+
+    return False
+
+
 async def handle_message(message: Message, bot: AsyncTeleBot) -> None:
+    if message.chat.type == "group":
+        if not await is_mention_me(message):
+            print("not a mention")
+            return
+
     uid = str(message.from_user.id)
     profile = profiles.load(uid)
     convo_id = profile.get("conversation_id")
@@ -32,11 +53,12 @@ async def handle_message(message: Message, bot: AsyncTeleBot) -> None:
         )
         return
 
+    message_text = get_strip_text(message)
     messages = convo.get("context", []).copy()
     messages = [{"role": m["role"], "content": m["content"]} for m in messages]
     messages.append({
         "role": "user",
-        "content": message.text
+        "content": message_text
     })
     model = profile.get("model")
     if model not in endpoint["models"]:
@@ -49,6 +71,7 @@ async def handle_message(message: Message, bot: AsyncTeleBot) -> None:
 
     text = ""
     buffered = ""
+    start = time.time()
     try:
         async for chunk in ask_stream(endpoint, {
             "model": model,
@@ -57,12 +80,10 @@ async def handle_message(message: Message, bot: AsyncTeleBot) -> None:
             content = chunk["content"]
             buffered += content if content is not None else ""
             finished = chunk["finished"] == "stop"
-            if len(buffered) >= 15 or finished:
+            if (time.time() - start > 1.8 and len(buffered) >= 15) or finished:
                 text = text + buffered
-                if len(buffered) == 0:
-                    continue
-
                 buffered = ""
+                start = time.time()
                 await bot.edit_message_text(
                     text=escape(text),
                     chat_id=message.chat.id,
@@ -82,7 +103,7 @@ async def handle_message(message: Message, bot: AsyncTeleBot) -> None:
         convo["context"] += [
             {
                 "role": "user",
-                "content": message.text,
+                "content": message_text,
                 'message_id': message.id,
                 'chat_id': message.chat.id,
                 'ts': int(time.time()),
