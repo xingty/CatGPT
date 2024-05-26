@@ -6,6 +6,7 @@ from ask import ask_stream, ask
 from utils.md2tgmd import escape
 from utils.text import get_strip_text, get_timeout_from_text
 import time
+import asyncio
 
 
 async def is_mention_me(message: Message) -> bool:
@@ -15,13 +16,20 @@ async def is_mention_me(message: Message) -> bool:
 
     text = message.text
     for entity in message.entities:
-        print(entity)
         if entity.type == "mention":
             who = text[entity.offset:entity.offset + entity.length]
             if who == bot_name:
                 return True
 
     return False
+
+
+async def send_message(bot: AsyncTeleBot, message: Message, text: str):
+    await bot.send_message(
+        chat_id=message.chat.id,
+        text=escape(text),
+        reply_to_message_id=message.message_id
+    )
 
 
 async def handle_message(message: Message, bot: AsyncTeleBot) -> None:
@@ -71,48 +79,8 @@ async def handle_message(message: Message, bot: AsyncTeleBot) -> None:
         text="A smart cat is thinking..."
     )
 
-    text = ""
-    buffered = ""
-    start = time.time()
-    timeout = 1.8
     try:
-        async for chunk in ask_stream(endpoint, {
-            "model": model,
-            "messages": messages,
-        }):
-            content = chunk["content"]
-            buffered += content if content is not None else ""
-            finished = chunk["finished"] == "stop"
-            if (time.time() - start > timeout and len(buffered) >= 15) or finished:
-                text += buffered
-                buffered = ""
-                start = time.time()
-                try:
-                    await bot.edit_message_text(
-                        text=escape(text),
-                        chat_id=message.chat.id,
-                        message_id=reply_msg.message_id,
-                        parse_mode="MarkdownV2",
-                        disable_web_page_preview=True
-                    )
-                    timeout = 1.8
-                except ApiTelegramException as ae:
-                    print(ae)
-                    if ae.error_code != 429:
-                        raise ae
-
-                    seconds = get_timeout_from_text(ae.description)
-                    timeout = 10 if seconds < 0 else seconds
-
-    except Exception as e:
-        await bot.edit_message_text(
-            chat_id=message.chat.id,
-            message_id=reply_msg.message_id,
-            text=f"Error: {e}"
-        )
-        return
-
-    if message.content_type != "photo":
+        text = await do_reply(endpoint, model, messages, reply_msg, bot)
         convo["context"] += [
             {
                 "role": "user",
@@ -129,35 +97,95 @@ async def handle_message(message: Message, bot: AsyncTeleBot) -> None:
                 'ts': int(time.time()),
             }
         ]
-
         session.save_convo(uid, convo)
 
-    generate_title = convo.get("generate_title", True)
-    if generate_title:
-        endpoint = config.get_title_endpoint()[0]
-        if endpoint is None:
-            return
+        generate_title = convo.get("generate_title", True)
+        if generate_title:
+            await do_generate_title(convo, messages, uid, text)
+    except Exception as e:
+        await bot.edit_message_text(
+            chat_id=message.chat.id,
+            message_id=reply_msg.message_id,
+            text=f"Error: {e}"
+        )
+        return
 
-        messages += [
-            {
-                "role": "assistant",
-                "content": text
-            },
-            {
-                "role": "user",
-                "content": "Please generate a title for this conversation without any lead-in, punctuation, quotation marks, periods, symbols, bold text, or additional text. Remove enclosing quotation marks. Please only return the title without any additional info.",
-            }
-        ]
-        title = await ask(
-            endpoint,
-            {
-                "messages": messages
-            }
+
+async def do_reply(endpoint: dict, model: str, messages: list, reply_msg: Message, bot: AsyncTeleBot):
+    text = ""
+    buffered = ""
+    start = time.time()
+    timeout = 1.8
+    async for chunk in ask_stream(endpoint, {
+        "model": model,
+        "messages": messages,
+    }):
+        content = chunk["content"]
+        buffered += content if content is not None else ""
+        finished = chunk["finished"] == "stop"
+        if (time.time() - start > timeout and len(buffered) >= 15) or finished:
+            text += buffered
+            buffered = ""
+            start = time.time()
+            try:
+                await bot.edit_message_text(
+                    text=escape(text),
+                    chat_id=reply_msg.chat.id,
+                    message_id=reply_msg.message_id,
+                    parse_mode="MarkdownV2",
+                    disable_web_page_preview=True
+                )
+                timeout = 1.8
+            except ApiTelegramException as ae:
+                print(ae)
+                if ae.error_code != 429:
+                    raise ae
+
+                seconds = get_timeout_from_text(ae.description)
+                timeout = 10 if seconds < 0 else seconds
+
+    if len(buffered) > 0:
+        text += buffered
+        delta = timeout - (time.time() - start)
+        if delta > 0:
+            await asyncio.sleep(int(delta) + 1)
+
+        await bot.edit_message_text(
+            text=escape(text),
+            chat_id=reply_msg.chat.id,
+            message_id=reply_msg.message_id,
+            parse_mode="MarkdownV2",
+            disable_web_page_preview=True
         )
 
-        convo["generate_title"] = False
-        convo["title"] = title
-        session.save_convo(uid, convo)
+    return text
+
+
+async def do_generate_title(convo: dict, messages: list, uid: str, text: str):
+    endpoint = config.get_title_endpoint()[0]
+    if endpoint is None:
+        return
+
+    messages += [
+        {
+            "role": "assistant",
+            "content": text
+        },
+        {
+            "role": "user",
+            "content": "Please generate a title for this conversation without any lead-in, punctuation, quotation marks, periods, symbols, bold text, or additional text. Remove enclosing quotation marks. Please only return the title without any additional info.",
+        }
+    ]
+    title = await ask(
+        endpoint,
+        {
+            "messages": messages
+        }
+    )
+
+    convo["generate_title"] = False
+    convo["title"] = title
+    session.save_convo(uid, convo)
 
 
 def message_check(func):
@@ -173,4 +201,4 @@ def message_check(func):
 
 def register(bot: AsyncTeleBot, decorator) -> None:
     handler = message_check(decorator(handle_message))
-    bot.register_message_handler(handler, regexp=r"^(?!/)", pass_bot=True, content_types=["text", "photo"])
+    bot.register_message_handler(handler, regexp=r"^(?!/)", pass_bot=True, content_types=["text"])
