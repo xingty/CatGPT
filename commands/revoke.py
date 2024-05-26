@@ -22,21 +22,27 @@ async def handle_revoke(message: Message, bot: AsyncTeleBot):
         return
 
     messages = convo.get("context", [])
-    if len(messages) < 2:
+    revoke_messages = []
+    for m in reversed(messages):
+        if m.get("chat_id") == message.chat.id:
+            revoke_messages.insert(0, m)
+        if len(revoke_messages) == 2:
+            break
+
+    if len(revoke_messages) != 2:
         await bot.reply_to(message, "Could not find any message in current conversation")
         return
 
     context = f'{message.message_id}:{message.chat.id}:{message.from_user.id}'
     keyboard = [
         [
-            InlineKeyboardButton("Yes", callback_data=f'revoke:yes:{context}'),
-            InlineKeyboardButton("No", callback_data=f'revoke:no:{context}'),
+            InlineKeyboardButton("Yes", callback_data=f'{action["name"]}:yes:{context}'),
+            InlineKeyboardButton("No", callback_data=f'{action["name"]}:no:{context}'),
         ],
     ]
 
-    revoke_list = [messages[-2], messages[-1]]
     content = ''
-    for m in revoke_list:
+    for m in revoke_messages:
         content += f'### {m["role"]}\n{m["content"]}\n\n'
 
     content = f'Are you sure? This operation will revoke the messages below:\n\n{content}'
@@ -64,7 +70,14 @@ async def do_revoke(bot: AsyncTeleBot, operation: str, msg_id: int, chat_id: int
         return
 
     messages = convo.get("context", [])
-    if len(messages) < 2:
+    revoke_messages = []
+    i = len(messages) - 1
+    while i >= 0 and len(revoke_messages) < 2:
+        if messages[i].get("chat_id") == chat_id:
+            revoke_messages.append(messages.pop(i))
+        i -= 1
+
+    if len(revoke_messages) != 2:
         await bot.send_message(
             chat_id=chat_id,
             text="Could not find any message in current conversation",
@@ -72,12 +85,8 @@ async def do_revoke(bot: AsyncTeleBot, operation: str, msg_id: int, chat_id: int
         )
         return
 
-    answer = messages.pop()
-    question = messages.pop()
-    revoke_list = [question, answer]
-
     content = ''
-    for m in revoke_list:
+    for m in revoke_messages:
         content += f'### {m["role"]}\n{m["content"]}\n\n'
 
     await bot.send_message(
@@ -87,14 +96,14 @@ async def do_revoke(bot: AsyncTeleBot, operation: str, msg_id: int, chat_id: int
         parse_mode="MarkdownV2"
     )
     session.sync_convo(uid)
-    for m in revoke_list:
+    for m in revoke_messages:
         if 'message_id' in m and 'chat_id' in m:
             await bot.delete_message(m['chat_id'], m['message_id'])
 
 
 def register(bot: AsyncTeleBot, decorator) -> None:
     handler = decorator(handle_revoke)
-    bot.register_message_handler(handler, pass_bot=True, commands=['revoke'])
+    bot.register_message_handler(handler, pass_bot=True, commands=[action['name']])
 
 
 action = {
