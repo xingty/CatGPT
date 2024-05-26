@@ -42,8 +42,8 @@ async def register_commands(bot: AsyncTeleBot) -> None:
         uid = str(call.from_user.id)
         target = segments[0]
         operation = segments[1]
-        message_id = segments[2]
-        chat_id = segments[3]
+        message_id = int(segments[2])
+        chat_id = int(segments[3])
         source_uid = int(segments[4])
 
         if call.from_user.id != source_uid:
