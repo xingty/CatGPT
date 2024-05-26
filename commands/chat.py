@@ -1,4 +1,5 @@
 from telebot.async_telebot import AsyncTeleBot
+from telebot.asyncio_helper import ApiTelegramException
 from telebot.types import Message
 from context import session, profiles, config, get_bot_name
 from ask import ask_stream, ask
@@ -11,9 +12,12 @@ async def is_mention_me(message: Message) -> bool:
     if message.entities is None:
         return False
     bot_name = await get_bot_name()
+    print("bot name:" + bot_name)
 
     text = message.text
+    print("text:" + text)
     for entity in message.entities:
+        print(entity)
         if entity.type == "mention":
             who = text[entity.offset:entity.offset + entity.length]
             if who == bot_name:
@@ -22,8 +26,9 @@ async def is_mention_me(message: Message) -> bool:
     return False
 
 
+
 async def handle_message(message: Message, bot: AsyncTeleBot) -> None:
-    if message.chat.type == "group":
+    if message.chat.type in ["group", "supergroup", "gigagroup", "channel"]:
         if not await is_mention_me(message):
             print("not a mention")
             return
@@ -147,6 +152,17 @@ async def handle_message(message: Message, bot: AsyncTeleBot) -> None:
         session.save_convo(uid, convo)
 
 
+def message_check(func):
+    async def wrapper(message: Message, bot: AsyncTeleBot):
+        if message.chat.type in ["group", "supergroup", "gigagroup", "channel"]:
+            if not await is_mention_me(message):
+                return
+
+        await func(message, bot)
+
+    return wrapper
+
+
 def register(bot: AsyncTeleBot, decorator) -> None:
-    handler = decorator(handle_message)
+    handler = message_check(decorator(handle_message))
     bot.register_message_handler(handler, regexp=r"^(?!/)", pass_bot=True, content_types=["text", "photo"])

@@ -38,7 +38,8 @@ async def handle_key(message: Message, bot: AsyncTeleBot):
         msg = 'You have already been registered in the system. No need to enter the key again.'
     elif compare(message.text.replace('/key ', ''), config.access_key):
         enroll(uid)
-        msg = 'successful!'
+        username = message.from_user.username
+        msg = f'@{username} Your registration is complete. Have fun!"'
         await bot.delete_message(
             chat_id=message.chat.id,
             message_id=message.message_id
@@ -46,7 +47,10 @@ async def handle_key(message: Message, bot: AsyncTeleBot):
     else:
         msg = 'Invalid key. Please enter a valid key to proceed.'
 
-    await bot.reply_to(message, msg)
+    await bot.send_message(
+        chat_id=message.chat.id,
+        text=msg
+    )
 
 
 def register(bot: AsyncTeleBot, decorator) -> None:
