@@ -123,7 +123,7 @@ async def do_reply(endpoint: dict, model: str, messages: list, reply_msg: Messag
         content = chunk["content"]
         buffered += content if content is not None else ""
         finished = chunk["finished"] == "stop"
-        if (time.time() - start > timeout and len(buffered) >= 15) or finished:
+        if (time.time() - start > timeout and len(buffered) >= 18) or finished:
             text += buffered
             buffered = ""
             start = time.time()
