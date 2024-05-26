@@ -57,3 +57,12 @@ def get_strip_text(message: Message) -> str:
         return text
 
     return text[index + 1:]
+
+
+def get_timeout_from_text(text: str) -> int:
+    text = text.strip()
+    try:
+        index = text.rfind(" ")
+        return int(text[index + 1:])
+    except ValueError:
+        return -1

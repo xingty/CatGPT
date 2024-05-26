@@ -4,7 +4,7 @@ from telebot.types import Message
 from context import session, profiles, config, get_bot_name
 from ask import ask_stream, ask
 from utils.md2tgmd import escape
-from utils.text import get_strip_text
+from utils.text import get_strip_text, get_timeout_from_text
 import time
 
 
@@ -12,10 +12,8 @@ async def is_mention_me(message: Message) -> bool:
     if message.entities is None:
         return False
     bot_name = await get_bot_name()
-    print("bot name:" + bot_name)
 
     text = message.text
-    print("text:" + text)
     for entity in message.entities:
         print(entity)
         if entity.type == "mention":
@@ -24,7 +22,6 @@ async def is_mention_me(message: Message) -> bool:
                 return True
 
     return False
-
 
 
 async def handle_message(message: Message, bot: AsyncTeleBot) -> None:
@@ -77,6 +74,7 @@ async def handle_message(message: Message, bot: AsyncTeleBot) -> None:
     text = ""
     buffered = ""
     start = time.time()
+    timeout = 1.8
     try:
         async for chunk in ask_stream(endpoint, {
             "model": model,
@@ -85,17 +83,27 @@ async def handle_message(message: Message, bot: AsyncTeleBot) -> None:
             content = chunk["content"]
             buffered += content if content is not None else ""
             finished = chunk["finished"] == "stop"
-            if (time.time() - start > 1.8 and len(buffered) >= 15) or finished:
-                text = text + buffered
+            if (time.time() - start > timeout and len(buffered) >= 15) or finished:
+                text += buffered
                 buffered = ""
                 start = time.time()
-                await bot.edit_message_text(
-                    text=escape(text),
-                    chat_id=message.chat.id,
-                    message_id=reply_msg.message_id,
-                    parse_mode="MarkdownV2",
-                    disable_web_page_preview=True
-                )
+                try:
+                    await bot.edit_message_text(
+                        text=escape(text),
+                        chat_id=message.chat.id,
+                        message_id=reply_msg.message_id,
+                        parse_mode="MarkdownV2",
+                        disable_web_page_preview=True
+                    )
+                    timeout = 1.8
+                except ApiTelegramException as ae:
+                    print(ae)
+                    if ae.error_code != 429:
+                        raise ae
+
+                    seconds = get_timeout_from_text(ae.description)
+                    timeout = 10 if seconds < 0 else seconds
+
     except Exception as e:
         await bot.edit_message_text(
             chat_id=message.chat.id,
