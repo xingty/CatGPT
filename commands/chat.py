@@ -124,25 +124,28 @@ async def do_reply(endpoint: dict, model: str, messages: list, reply_msg: Messag
         buffered += content if content is not None else ""
         finished = chunk["finished"] == "stop"
         if (time.time() - start > timeout and len(buffered) >= 18) or finished:
-            text += buffered
-            buffered = ""
             start = time.time()
             try:
                 await bot.edit_message_text(
-                    text=escape(text),
+                    text=escape(text + buffered),
                     chat_id=reply_msg.chat.id,
                     message_id=reply_msg.message_id,
                     parse_mode="MarkdownV2",
                     disable_web_page_preview=True
                 )
+                text += buffered
+                buffered = ""
                 timeout = 1.8
             except ApiTelegramException as ae:
                 print(ae)
-                if ae.error_code != 429:
+                if ae.error_code == 400:
+                    timeout = 2.5
+                    print(escape(text + buffered))
+                elif ae.error_code != 429:
+                    seconds = get_timeout_from_text(ae.description)
+                    timeout = 10 if seconds < 0 else seconds
+                else:
                     raise ae
-
-                seconds = get_timeout_from_text(ae.description)
-                timeout = 10 if seconds < 0 else seconds
 
     if len(buffered) > 0:
         text += buffered
