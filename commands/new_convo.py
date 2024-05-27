@@ -5,26 +5,23 @@ from utils.md2tgmd import escape
 
 
 async def handle_new_topic(message: Message, bot: AsyncTeleBot) -> None:
-    text = message.text.replace('/new ', '').strip()
-    if len(text) > 2:
-        uid = str(message.from_user.id)
-        await create_convo(bot, message.message_id, message.chat.id, uid, text)
-        return
-
-    context = f'{message.message_id}:{message.chat.id}:{message.from_user.id}'
-    keyboard = [
-        [
-            InlineKeyboardButton("Yes", callback_data=f'{action["name"]}:yes:{context}'),
-            InlineKeyboardButton("No", callback_data=f'{action["name"]}:no:{context}'),
-        ],
-    ]
-
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    await bot.send_message(
-        chat_id=message.chat.id,
-        text='Create a new topic? (Yes/No)',
-        reply_markup=reply_markup
-    )
+    text = message.text.replace('/new', '').strip()
+    uid = str(message.from_user.id)
+    await create_convo(bot, message.message_id, message.chat.id, uid, text)
+    # context = f'{message.message_id}:{message.chat.id}:{message.from_user.id}'
+    # keyboard = [
+    #     [
+    #         InlineKeyboardButton("Yes", callback_data=f'{action["name"]}:yes:{context}'),
+    #         InlineKeyboardButton("No", callback_data=f'{action["name"]}:no:{context}'),
+    #     ],
+    # ]
+    #
+    # reply_markup = InlineKeyboardMarkup(keyboard)
+    # await bot.send_message(
+    #     chat_id=message.chat.id,
+    #     text='Create a new topic? (Yes/No)',
+    #     reply_markup=reply_markup
+    # )
 
 
 async def create_convo(bot: AsyncTeleBot, msg_id: int, chat_id: int, uid: str, title: str = None) -> None:
@@ -50,12 +47,12 @@ async def create_convo(bot: AsyncTeleBot, msg_id: int, chat_id: int, uid: str, t
     )
 
 
-async def do_create_topic(
-        bot: AsyncTeleBot, operation: str, msg_id: int,
-        chat_id: int, uid: str, message: Message
-) -> None:
-    if operation == "yes":
-        await create_convo(bot, msg_id, chat_id, uid)
+# async def do_create_topic(
+#         bot: AsyncTeleBot, operation: str, msg_id: int,
+#         chat_id: int, uid: str, message: Message
+# ) -> None:
+#     if operation == "yes":
+#         await create_convo(bot, msg_id, chat_id, uid)
 
 
 def register(bot: AsyncTeleBot, decorator) -> None:
@@ -66,5 +63,5 @@ def register(bot: AsyncTeleBot, decorator) -> None:
 action = {
     "name": 'new',
     "description": 'New Topic',
-    "handler": do_create_topic,
+    # "handler": do_create_topic,
 }
