@@ -44,14 +44,14 @@ async def handle_message(message: Message, bot: AsyncTeleBot) -> None:
     if convo_id is None:
         await bot.reply_to(
             message=message,
-            text="Please select a conversation to use."
+            text="Conversation not found. Please start a new conversation or switch to a existing one."
         )
         return
     convo = session.get_convo(uid, convo_id)
     if convo is None:
         await bot.reply_to(
             message=message,
-            text="Please select a conversation to use."
+            text="Conversation not found. Please start a new conversation or switch to a existing one."
         )
         return
 

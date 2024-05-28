@@ -87,6 +87,28 @@ class Session:
 
         file.write_text(json.dumps(convo_list, ensure_ascii=False))
 
+    def delete_convo(self, uid: str, convo_id: str):
+        convo_list = self.context[uid]
+        for index, item in enumerate(convo_list):
+            if item.get('id') == convo_id:
+                del convo_list[index]
+                break
+
+        if len(convo_list) == 0:
+            label = str(uuid.uuid4())
+            convo_list.append(
+                {
+                    "id": label.replace("-", "")[:10],
+                    "label": label,
+                    "title": "Convo 1",
+                    "generate_title": True,
+                    "context": [],
+                }
+            )
+
+        self.context[uid] = convo_list
+        self.sync_convo(uid)
+
     def create_convo(self, uid: str, title: str = None) -> dict:
         label = str(uuid.uuid4())
         if not title:

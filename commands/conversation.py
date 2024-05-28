@@ -5,6 +5,7 @@ from utils.md2tgmd import escape
 from context import session, profiles, config
 from utils.text import messages_to_segments
 from share.github import create_or_update_issue
+from . import show_conversation
 
 
 async def share(convo: dict):
@@ -31,31 +32,14 @@ async def handle_conversation(message: Message, bot: AsyncTeleBot):
         await bot.reply_to(message, "Please select a conversation to use.")
         return
 
-    messages = convo.get("context", [])
-    messages = [msg for msg in messages if (msg["role"] != "system" and msg["chat_id"] == message.chat.id)]
-    segments = messages_to_segments(messages)
-    if len(segments) == 0:
-        await bot.send_message(
-            chat_id=message.chat.id,
-            text="Content is empty, Please talk something.",
-            reply_to_message_id=message.message_id
-        )
-        return
-
-    last_message_id = message.message_id
-    context = f'{message.message_id}:{message.chat.id}:{uid}'
-    callback_data = f'{action["name"]}:share_{convo_id}:{context}'
-
-    for content in segments:
-        reply_msg: Message = await bot.send_message(
-            chat_id=message.chat.id,
-            text=escape(content),
-            parse_mode="MarkdownV2",
-            disable_web_page_preview=True,
-            reply_to_message_id=last_message_id,
-            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Share", callback_data=callback_data)]]),
-        )
-        last_message_id = reply_msg.message_id
+    await show_conversation(
+        chat_id=message.chat.id,
+        msg_id=message.message_id,
+        uid=uid,
+        bot=bot,
+        convo=convo,
+        reply_msg_id=message.message_id
+    )
 
 
 async def handle_share_convo(

@@ -2,6 +2,9 @@ from telebot.async_telebot import AsyncTeleBot
 from telebot.types import Message, BotCommand
 from context import session
 from pathlib import Path
+from utils.md2tgmd import escape
+from utils.text import messages_to_segments
+from telebot.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
 import importlib
 
 
@@ -73,3 +76,31 @@ def all_commands() -> list[str]:
             continue
         commands.append(child.stem)
     return commands
+
+
+async def show_conversation(chat_id: int, msg_id: int, uid: str, bot: AsyncTeleBot, convo: dict, reply_msg_id: int = None):
+    messages = convo.get("context", [])
+    messages = [msg for msg in messages if (msg["role"] != "system" and msg["chat_id"] == chat_id)]
+    segments = messages_to_segments(messages)
+    if len(segments) == 0:
+        await bot.send_message(
+            chat_id=chat_id,
+            text="Content is empty, Please talk something.",
+            reply_to_message_id=msg_id
+        )
+        return
+
+    last_message_id = reply_msg_id
+    context = f'{msg_id}:{chat_id}:{uid}'
+    callback_data = f'conversation:share_{convo["id"]}:{context}'
+
+    for content in segments:
+        reply_msg: Message = await bot.send_message(
+            chat_id=chat_id,
+            text=escape(content),
+            parse_mode="MarkdownV2",
+            disable_web_page_preview=True,
+            reply_to_message_id=last_message_id,
+            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Share", callback_data=callback_data)]]),
+        )
+        last_message_id = reply_msg.message_id
