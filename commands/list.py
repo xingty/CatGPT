@@ -17,7 +17,6 @@ async def handle_convo(message: Message, bot: AsyncTeleBot):
     title = current_convo.get('title', 'None')
     text = f"Current conversation: `{title}` \n\nConversation list:\n"
     conversations = session.list_conversation(uid, message.chat.id)
-    print(conversations)
     for index, convo in enumerate(conversations):
         seq = str(index + 1)
         callback_data = f'{action["name"]}:l_{convo["id"]}:{context}'
