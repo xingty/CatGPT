@@ -67,5 +67,5 @@ action = {
     "name": 'endpoints',
     "description": 'list all endpoints',
     "handler": do_endpoint_change,
-    "delete_after_invoke": False
+    "delete_after_invoke": True
 }
