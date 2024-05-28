@@ -1,7 +1,6 @@
 from telebot.async_telebot import AsyncTeleBot
 from telebot.types import Message
 from context import session, profiles, config
-from utils.prompt import get_system_prompt
 import hmac
 
 

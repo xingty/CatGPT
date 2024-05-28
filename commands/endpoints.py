@@ -65,7 +65,7 @@ def register(bot: AsyncTeleBot, decorator) -> None:
 
 action = {
     "name": 'endpoints',
-    "description": 'list all endpoints',
+    "description": 'list endpoints',
     "handler": do_endpoint_change,
     "delete_after_invoke": True
 }
