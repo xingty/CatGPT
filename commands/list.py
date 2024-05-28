@@ -8,14 +8,16 @@ from . import show_conversation
 async def handle_convo(message: Message, bot: AsyncTeleBot):
     uid = str(message.from_user.id)
     profile = profiles.load(uid)
-    current_convo = session.get_convo(uid, profile.get("conversation_id")) or {}
+    convo_id = profile["conversation"].get(str(message.chat.id))
+    current_convo = session.get_convo(uid, convo_id) or {}
     context = f'{message.message_id}:{message.chat.id}:{uid}'
     keyboard = []
     items = []
 
     title = current_convo.get('title', 'None')
     text = f"Current conversation: `{title}` \n\nConversation list:\n"
-    conversations = session.list_conversation(uid)
+    conversations = session.list_conversation(uid, message.chat.id)
+    print(conversations)
     for index, convo in enumerate(conversations):
         seq = str(index + 1)
         callback_data = f'{action["name"]}:l_{convo["id"]}:{context}'
@@ -59,8 +61,8 @@ async def do_convo_change(bot: AsyncTeleBot, operation: str, msg_id: int, chat_i
         buttons = [[
             InlineKeyboardButton("switch", callback_data=f'{action["name"]}:{op_switch}:{context}'),
             # InlineKeyboardButton("fetch", callback_data=f'{action["name"]}:{op_fetch}:{context}'),
-            InlineKeyboardButton("delete", callback_data=f'{action["name"]}:{op_delete}:{context}'),
             InlineKeyboardButton("cancel", callback_data=f'{action["name"]}:{op_cancel}:{context}'),
+            InlineKeyboardButton("delete", callback_data=f'{action["name"]}:{op_delete}:{context}'),
         ]]
 
         await bot.send_message(
@@ -72,7 +74,7 @@ async def do_convo_change(bot: AsyncTeleBot, operation: str, msg_id: int, chat_i
         return
     elif real_op == "s":  # switch to this conversation
         profile = profiles.load(uid)
-        profile["conversation_id"] = conversation_id
+        profile["conversation"][str(chat_id)] = conversation_id
         profiles.update_all(uid, profile)
         await show_conversation(
             chat_id=chat_id,
@@ -86,6 +88,7 @@ async def do_convo_change(bot: AsyncTeleBot, operation: str, msg_id: int, chat_i
     elif real_op == "d":  # delete this conversation
         print(f"delete {conversation_id}")
         session.delete_convo(uid, conversation_id)
+        await bot.delete_message(chat_id=chat_id, message_id=msg_id)
     elif real_op == "c":  # cancel
         print(f"cancel operation {conversation_id}")
 
@@ -98,7 +101,7 @@ def register(bot: AsyncTeleBot, decorator) -> None:
 
 
 action = {
-    "name": 'convo',
+    "name": 'list',
     "description": 'all conversations',
     "handler": do_convo_change,
     "delete_after_invoke": False

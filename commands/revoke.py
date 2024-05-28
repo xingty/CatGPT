@@ -108,6 +108,6 @@ def register(bot: AsyncTeleBot, decorator) -> None:
 
 action = {
     "name": 'revoke',
-    "description": 'Revoke message',
+    "description": 'revoke message',
     "handler": do_revoke,
 }

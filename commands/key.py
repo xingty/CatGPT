@@ -7,18 +7,10 @@ import hmac
 
 def enroll(uid):
     endpoint = config.get_default_endpoint()
-    prompt = get_system_prompt(endpoint["default_model"])
-    prompts = []
-    if prompt is not None:
-        prompts.append({
-            "role": "system",
-            "content": prompt
-        })
-
-    convo_list = session.enroll(uid, prompts)
+    session.enroll(uid)
 
     profile = {
-        "conversation_id": convo_list[0].get("id"),
+        "conversation": {},
         "model": endpoint["default_model"],
         "endpoint": endpoint["name"],
         "role": "System",

@@ -4,6 +4,7 @@ import json
 DEFAULT_PROFILE = {
     "prompt": "You are ChatGPT, a large language model trained by OpenAI.\nLatex inline: $x^2$\nLatex block: $$e=mc^2$$",
     "model": None,
+    "conversation": {}
 }
 
 
@@ -73,3 +74,7 @@ class UserProfile:
         self.update_all(uid, profile)
 
         return profile
+
+    def get_convo_id(self, uid: str, chat_id: int):
+        profile = self.load(uid)
+        return profile["conversation"].get(str(chat_id), None)

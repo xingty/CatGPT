@@ -66,11 +66,15 @@ class Session:
 
         file.write_text(json.dumps(convo_list, ensure_ascii=False))
 
-    def list_conversation(self, uid: str):
-        return self.context.get(uid, [])
+    def list_conversation(self, uid: str, chat_id: int):
+        convo_list = self.context.get(uid, [])
+        return [item for item in convo_list if item.get('chat_id') == chat_id]
 
     def get_convo(self, uid: str, convo_id: str):
-        for convo in self.list_conversation(uid):
+        if not convo_id:
+            return None
+
+        for convo in self.context.get(uid, []):
             if convo.get('id') == convo_id:
                 return convo
 
@@ -109,17 +113,20 @@ class Session:
         self.context[uid] = convo_list
         self.sync_convo(uid)
 
-    def create_convo(self, uid: str, title: str = None) -> dict:
+    def create_convo(self, uid: str, chat_id: int, title: str = None) -> dict:
         label = str(uuid.uuid4())
+        generate_title = False
         if not title:
             size = len(self.context[uid]) + 1
             title = f"Convo {size}"
+            generate_title = True
 
         convo = {
             "id": label.replace("-", "")[:10],
             "label": label,
+            "chat_id": chat_id,
             "title": title,
-            "generate_title": False if title else True,
+            "generate_title": generate_title,
             "context": [],
         }
         self.context[uid].append(convo)
@@ -135,13 +142,13 @@ class Session:
     def enroll(self, uid: str, messages=None) -> list:
         label = str(uuid.uuid4())
         convo = [
-            {
-                "id": label.replace("-", "")[:10],
-                "label": label,
-                "title": "Convo 1",
-                "generate_title": True,
-                "context": [] if messages is None else messages,
-            }
+            # {
+            #     "id": label.replace("-", "")[:10],
+            #     "label": label,
+            #     "title": "Convo 1",
+            #     "generate_title": True,
+            #     "context": [] if messages is None else messages,
+            # }
         ]
         self.context[uid] = convo
         self.append_to_disk(uid, convo)

@@ -25,11 +25,11 @@ async def share(convo: dict):
 async def handle_conversation(message: Message, bot: AsyncTeleBot):
     uid = str(message.from_user.id)
     profile = profiles.load(uid)
-    convo_id = profile.get("conversation_id")
-
+    convo_id = profile["conversation"].get(str(message.chat.id))
     convo = session.get_convo(uid, convo_id)
     if convo is None:
-        await bot.reply_to(message, "Please select a conversation to use.")
+        text = "Conversation not found. Please start a new conversation or switch to a existing one."
+        await bot.reply_to(message, text)
         return
 
     await show_conversation(
@@ -90,6 +90,7 @@ async def handle_share_convo(
     elif real_op == "no":
         await bot.delete_message(message.chat.id, message.message_id)
     else:
+        # 当点击yes时，real_op就是conversation_id
         convo = session.get_convo(uid, real_op)
         if convo is None:
             await bot.send_message(
@@ -125,7 +126,7 @@ def register(bot: AsyncTeleBot, decorator) -> None:
 
 action = {
     "name": "conversation",
-    "description": "Current conversation",
+    "description": "current conversation",
     "handler": handle_share_convo,
     "delete_after_invoke": False
 }

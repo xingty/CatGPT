@@ -39,21 +39,20 @@ async def handle_message(message: Message, bot: AsyncTeleBot) -> None:
             return
 
     uid = str(message.from_user.id)
+    chat_id = str(message.chat.id)
     profile = profiles.load(uid)
-    convo_id = profile.get("conversation_id")
-    if convo_id is None:
-        await bot.reply_to(
-            message=message,
-            text="Conversation not found. Please start a new conversation or switch to a existing one."
-        )
-        return
+    convo_id = profile["conversation"].get(chat_id)
+    # if convo_id is None:
+    #     await bot.reply_to(
+    #         message=message,
+    #         text="Conversation not found. Please start a new conversation or switch to a existing one."
+    #     )
+    #     return
     convo = session.get_convo(uid, convo_id)
     if convo is None:
-        await bot.reply_to(
-            message=message,
-            text="Conversation not found. Please start a new conversation or switch to a existing one."
-        )
-        return
+        convo = session.create_convo(uid, message.chat.id)
+        profile["conversation"][chat_id] = convo["id"]
+        profiles.update_all(uid, profile)
 
     endpoint = config.get_endpoint(profile.get("endpoint"))
     if endpoint is None:
