@@ -112,6 +112,7 @@ async def do_reply(endpoint: dict, model: str, messages: list, reply_msg: Messag
     buffered = ""
     start = time.time()
     timeout = 1.8
+    bot.send_document()
     async for chunk in ask_stream(endpoint, {
         "model": model,
         "messages": messages,

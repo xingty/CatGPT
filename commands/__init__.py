@@ -93,8 +93,10 @@ async def show_conversation(chat_id: int, msg_id: int, uid: str, bot: AsyncTeleB
 
     last_message_id = reply_msg_id
     context = f'{msg_id}:{chat_id}:{uid}'
-    callback_data = f'conversation:share_{convo["id"]}:{context}'
-
+    keyboard = [[
+        InlineKeyboardButton("Share", callback_data=f'conversation:share_{convo["id"]}:{context}'),
+        InlineKeyboardButton("Download", callback_data=f'conversation:dl_{convo["id"]}:{context}')
+    ]]
     for content in segments:
         reply_msg: Message = await bot.send_message(
             chat_id=chat_id,
@@ -102,6 +104,6 @@ async def show_conversation(chat_id: int, msg_id: int, uid: str, bot: AsyncTeleB
             parse_mode="MarkdownV2",
             disable_web_page_preview=True,
             reply_to_message_id=last_message_id,
-            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Share", callback_data=callback_data)]]),
+            reply_markup=InlineKeyboardMarkup(keyboard),
         )
         last_message_id = reply_msg.message_id

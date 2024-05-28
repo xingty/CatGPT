@@ -1,11 +1,11 @@
 from telebot.async_telebot import AsyncTeleBot
-from telebot.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
-from telebot.types import Message
+from telebot.types import Message, InlineKeyboardButton, InlineKeyboardMarkup, InputFile
 from utils.md2tgmd import escape
 from context import session, profiles, config
 from utils.text import messages_to_segments
 from share.github import create_or_update_issue
 from . import show_conversation
+from io import BytesIO
 
 
 async def share(convo: dict):
@@ -19,6 +19,20 @@ async def share(convo: dict):
         title=convo.get("title"),
         label=convo.get("label"),
         body=body,
+    )
+
+
+async def send_file(bot: AsyncTeleBot, message: Message, convo: dict):
+    messages = convo.get("context", [])
+    messages = [msg for msg in messages if (msg["role"] != "system" and msg["chat_id"] == message.chat.id)]
+    segment = messages_to_segments(messages, 65536)[0]
+    file_object = BytesIO(segment.encode("utf-8"))
+    file_object.name = f"{convo['title']}.md"
+    file = InputFile(file_object)
+    file.file_name = f"{convo['title']}.md"
+    await bot.send_document(
+        chat_id=message.chat.id,
+        document=file,
     )
 
 
@@ -50,8 +64,23 @@ async def handle_share_convo(
         uid: str,
         message: Message
 ):
-    segs = operation.split('_')
-    real_op = segs[0]
+    segments = operation.split('_')
+    real_op = segments[0]
+
+    if real_op == "no":
+        await bot.delete_message(message.chat.id, message.message_id)
+        return
+
+    convo_id = segments[1]
+    convo = session.get_convo(uid, convo_id)
+    if convo is None:
+        await bot.send_message(
+            chat_id=chat_id,
+            reply_to_message_id=msg_id,
+            parse_mode="MarkdownV2",
+            text=escape(f'conversation not found')
+        )
+        return
 
     if real_op == "share":
         if not config.share_info:
@@ -63,21 +92,10 @@ async def handle_share_convo(
             )
             return
 
-        convo_id = segs[1]
-        convo = session.get_convo(uid, convo_id)
-        if convo is None:
-            await bot.send_message(
-                chat_id=chat_id,
-                reply_to_message_id=msg_id,
-                parse_mode="MarkdownV2",
-                text=escape(f'conversation not found')
-            )
-            return
-
         context = f'{message.message_id}:{message.chat.id}:{uid}'
         buttons = [[
-            InlineKeyboardButton("yes", callback_data=f'{action["name"]}:{convo_id}:{context}'),
-            InlineKeyboardButton("no", callback_data=f'{action["name"]}:no:{context}'),
+            InlineKeyboardButton("yes", callback_data=f'{action["name"]}:yes_{convo_id}:{context}'),
+            InlineKeyboardButton("no", callback_data=f'{action["name"]}:no_{convo_id}:{context}'),
         ]]
 
         await bot.send_message(
@@ -87,35 +105,25 @@ async def handle_share_convo(
             text=escape(f"Share this conversation `<{convo['title']}>` to github?"),
             reply_markup=InlineKeyboardMarkup(buttons)
         )
-    elif real_op == "no":
+    elif real_op == "dl":
+        await send_file(bot, message, convo)
         await bot.delete_message(message.chat.id, message.message_id)
-    else:
-        # 当点击yes时，real_op就是conversation_id
-        convo = session.get_convo(uid, real_op)
-        if convo is None:
+    elif real_op == "yes":
+        html_url = await share(convo)
+        try:
             await bot.send_message(
                 chat_id=chat_id,
-                reply_to_message_id=msg_id,
                 parse_mode="MarkdownV2",
-                text=escape(f'conversation not found')
+                text=escape(f"Share link: {html_url}"),
+                disable_web_page_preview=False
             )
-        else:
-            html_url = await share(convo)
-            try:
-                await bot.send_message(
-                    chat_id=chat_id,
-                    parse_mode="MarkdownV2",
-                    text=escape(f"Share link: {html_url}"),
-                    disable_web_page_preview=False
-                )
-            except Exception as e:
-                await bot.send_message(
-                    chat_id=chat_id,
-                    parse_mode="MarkdownV2",
-                    text=str(e),
-                    disable_web_page_preview=True
-                )
-
+        except Exception as e:
+            await bot.send_message(
+                chat_id=chat_id,
+                parse_mode="MarkdownV2",
+                text=str(e),
+                disable_web_page_preview=True
+            )
         await bot.delete_message(message.chat.id, message.message_id)
 
 
