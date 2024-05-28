@@ -113,7 +113,7 @@ class Session:
         self.context[uid] = convo_list
         self.sync_convo(uid)
 
-    def create_convo(self, uid: str, chat_id: int, title: str = None) -> dict:
+    def create_convo(self, uid: str, chat_id: int, title: str = None, messages: list = None) -> dict:
         label = str(uuid.uuid4())
         generate_title = False
         if not title:
@@ -127,7 +127,7 @@ class Session:
             "chat_id": chat_id,
             "title": title,
             "generate_title": generate_title,
-            "context": [],
+            "context": messages if messages else [],
         }
         self.context[uid].append(convo)
         self.append_to_disk(uid, [convo])

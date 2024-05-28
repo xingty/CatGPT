@@ -10,7 +10,7 @@ MODELS = {
 }
 
 DEFAULT_SYSTEM_TEMPLATE = """
-You are ChatGPT, a large language model trained by {{ServiceProvider}}.
+You are ChatGPT, a large language model trained by OpenAI.
 Knowledge cutoff: {cutoff}
 Current model: {model}
 `;
@@ -24,5 +24,16 @@ def get_system_prompt(model):
             cutoff=cutoff,
             model=model,
         )
+
+    return None
+
+
+def get_prompt(profile: dict):
+    prompt = profile.get("prompt")
+    if prompt:
+        return {
+            "role": "system",
+            "content": prompt
+        }
 
     return None

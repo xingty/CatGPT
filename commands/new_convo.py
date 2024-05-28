@@ -2,6 +2,7 @@ from telebot.async_telebot import AsyncTeleBot
 from telebot.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
 from context import session, profiles
 from utils.md2tgmd import escape
+from utils.prompt import get_prompt
 
 
 async def handle_new_topic(message: Message, bot: AsyncTeleBot) -> None:
@@ -12,7 +13,9 @@ async def handle_new_topic(message: Message, bot: AsyncTeleBot) -> None:
 
 async def create_convo(bot: AsyncTeleBot, msg_id: int, chat_id: int, uid: str, title: str = None) -> None:
     profile = profiles.load(uid)
-    convo = session.create_convo(uid, chat_id, title)
+    prompt = get_prompt(profile)
+    messages = [prompt] if prompt else None
+    convo = session.create_convo(uid, chat_id, title, messages)
     profile["conversation_id"] = convo.get("id")
     profiles.update_all(uid, profile)
 
@@ -40,6 +43,6 @@ def register(bot: AsyncTeleBot, decorator) -> None:
 
 action = {
     "name": 'new',
-    "description": 'New Topic',
+    "description": 'start a new conversation',
     # "handler": do_create_topic,
 }

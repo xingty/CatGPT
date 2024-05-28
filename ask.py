@@ -1,4 +1,19 @@
-from openai import OpenAI, AsyncOpenAI
+import json
+
+from openai import AsyncOpenAI
+from utils.prompt import get_system_prompt
+
+
+def inject_system_prompt_if_need(messages: list, endpoint: dict, model: str):
+    if messages[0].get("role") == "system":
+        return
+
+    prompt = get_system_prompt(model)
+    if prompt:
+        messages.insert(0, {
+            "role": "system",
+            "content": prompt
+        })
 
 
 async def ask_stream(endpoint: dict, body: dict):
@@ -7,9 +22,14 @@ async def ask_stream(endpoint: dict, body: dict):
         api_key=endpoint["secret_key"]
     )
 
+    messages = body.get('messages', [])
+    model = body.get('model')
+    inject_system_prompt_if_need(messages, endpoint, model)
+    assert len(messages) > 0, "messages should not be empty"
+    print(json.dumps(messages, ensure_ascii=False, indent=2))
     response = await client.chat.completions.create(
-        model=body.get('model'),
-        messages=body.get('messages'),
+        model=model,
+        messages=messages,
         temperature=body.get('temperature', 0.6),
         stream=True,
         presence_penalty=body.get('presence_penalty', 0.0),

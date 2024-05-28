@@ -5,6 +5,7 @@ from context import session, profiles, config, get_bot_name
 from ask import ask_stream, ask
 from utils.md2tgmd import escape
 from utils.text import get_strip_text, get_timeout_from_text
+from utils.prompt import get_prompt
 import time
 import asyncio
 
@@ -42,15 +43,11 @@ async def handle_message(message: Message, bot: AsyncTeleBot) -> None:
     chat_id = str(message.chat.id)
     profile = profiles.load(uid)
     convo_id = profile["conversation"].get(chat_id)
-    # if convo_id is None:
-    #     await bot.reply_to(
-    #         message=message,
-    #         text="Conversation not found. Please start a new conversation or switch to a existing one."
-    #     )
-    #     return
     convo = session.get_convo(uid, convo_id)
     if convo is None:
-        convo = session.create_convo(uid, message.chat.id)
+        prompt = get_prompt(profile)
+        messages = [prompt] if prompt else None
+        convo = session.create_convo(uid, message.chat.id, messages)
         profile["conversation"][chat_id] = convo["id"]
         profiles.update_all(uid, profile)
 
