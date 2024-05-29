@@ -3,12 +3,12 @@ import json
 from telebot.async_telebot import AsyncTeleBot
 from telebot.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
 from utils.md2tgmd import escape
-from context import session, profiles, config
+from context import session, profiles
 
 
-def get_convo(uid: str):
+def get_convo(uid: str, chat_id: int):
     profile = profiles.load(uid)
-    convo_id = profile.get("conversation_id")
+    convo_id = profile["conversation"].get(str(chat_id))
     convo = session.get_convo(uid, convo_id)
 
     return convo
@@ -16,7 +16,7 @@ def get_convo(uid: str):
 
 async def handle_revoke(message: Message, bot: AsyncTeleBot):
     uid = str(message.from_user.id)
-    convo = get_convo(uid)
+    convo = get_convo(uid, message.chat.id)
     if convo is None:
         await bot.reply_to(message, "Please select a conversation to use.")
         return
