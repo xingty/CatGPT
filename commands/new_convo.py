@@ -16,7 +16,7 @@ async def create_convo(bot: AsyncTeleBot, msg_id: int, chat_id: int, uid: str, t
     prompt = get_prompt(profile)
     messages = [prompt] if prompt else None
     convo = session.create_convo(uid, chat_id, title, messages)
-    profile["conversation_id"] = convo.get("id")
+    profile["conversation"][str(chat_id)] = convo.get("id")
     profiles.update_all(uid, profile)
 
     text = (
