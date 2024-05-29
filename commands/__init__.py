@@ -85,7 +85,7 @@ async def show_conversation(chat_id: int, msg_id: int, uid: str, bot: AsyncTeleB
     if len(segments) == 0:
         await bot.send_message(
             chat_id=chat_id,
-            text=f"Current conversation: **{convo['title']}**\n",
+            text=escape(f"Current conversation: **{convo['title']}**\n"),
             reply_to_message_id=msg_id,
             parse_mode="MarkdownV2",
         )
