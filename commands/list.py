@@ -85,9 +85,14 @@ async def do_convo_change(bot: AsyncTeleBot, operation: str, msg_id: int, chat_i
     # elif real_op == "q":  # get content of this conversation
     #     await show_conversation(message, bot, uid, convo)
     elif real_op == "d":  # delete this conversation
-        print(f"delete {conversation_id}")
         session.delete_convo(uid, conversation_id)
         await bot.delete_message(chat_id=chat_id, message_id=msg_id)
+
+        messages = convo.get("context", [])
+        message_ids = [msg["message_id"] for msg in messages if msg["role"] != "system"]
+        if len(message_ids) > 0:
+            await bot.delete_messages(chat_id=chat_id, message_ids=message_ids)
+
     elif real_op == "c":  # cancel
         print(f"cancel operation {conversation_id}")
 

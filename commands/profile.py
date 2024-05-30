@@ -1,7 +1,8 @@
 from telebot.async_telebot import AsyncTeleBot
 from telebot.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
 from utils.md2tgmd import escape
-from context import profiles, session
+from context import profiles
+from . import get_profile_text
 import json
 
 
@@ -19,12 +20,11 @@ async def handle_profiles(message: Message, bot: AsyncTeleBot):
     if len(items) > 0:
         keyboard.append(items)
 
-    profile = profiles.load(uid=str(message.from_user.id))
-    text = f"model: `{profile['model']}`\nendpoint: `{profile['endpoint']}`\nrole: `{profile['role']}`"
+    state_text = get_profile_text(str(message.from_user.id), message.chat.id)
 
     await bot.send_message(
         chat_id=message.chat.id,
-        text=escape(text),
+        text=state_text,
         reply_markup=InlineKeyboardMarkup(keyboard),
         parse_mode="MarkdownV2"
     )

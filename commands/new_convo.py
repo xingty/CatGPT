@@ -3,6 +3,7 @@ from telebot.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
 from context import session, profiles
 from utils.md2tgmd import escape
 from utils.prompt import get_prompt
+from . import get_profile_text
 
 
 async def handle_new_topic(message: Message, bot: AsyncTeleBot) -> None:
@@ -19,14 +20,8 @@ async def create_convo(bot: AsyncTeleBot, msg_id: int, chat_id: int, uid: str, t
     profile["conversation"][str(chat_id)] = convo.get("id")
     profiles.update_all(uid, profile)
 
-    text = (
-        "A new topic has been created.\nCurrent conversation: `{title}`\nPrompt: `{prompt}`\nendpoint: `{""endpoint}` \nmodel: `{model}`".
-        format(
-            title=convo.get('title'),
-            prompt=profile.get('role'),
-            endpoint=profile.get('endpoint'),
-            model=profile.get('model')
-        ))
+    text = get_profile_text(uid, chat_id)
+    text = "A new topic has been created.\n" + text
 
     await bot.send_message(
         chat_id=chat_id,
