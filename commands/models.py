@@ -11,7 +11,9 @@ async def handle_models(message: Message, bot: AsyncTeleBot):
     keyboard = []
     items = []
 
-    for model in config.get_models():
+    endpoint = config.get_endpoint(profile.get("endpoint", "None"))
+
+    for model in endpoint.get("models", []):
         callback_data = f'{action["name"]}:{model}:{context}'
         if len(items) == 2:
             keyboard.append(items)
@@ -35,9 +37,20 @@ async def do_model_change(bot: AsyncTeleBot, operation: str, msg_id: int, chat_i
     profile["model"] = operation
     profiles.update_all(uid, profile)
 
+    endpoint = config.get_endpoint(profile.get("endpoint", "None"))
+    if operation not in endpoint.get("models", []):
+        await bot.send_message(
+            chat_id=chat_id,
+            reply_to_message_id=msg_id,
+            parse_mode="MarkdownV2",
+            text=escape(f'current endpoint does not support the model `{operation}`')
+        )
+        return
+
+    await bot.delete_message(chat_id, msg_id)
+
     await bot.send_message(
         chat_id=chat_id,
-        reply_to_message_id=msg_id,
         parse_mode="MarkdownV2",
         text=escape(f'current model: `{operation}`')
     )
@@ -52,5 +65,5 @@ action = {
     "name": 'models',
     "description": 'list all models',
     "handler": do_model_change,
-    "delete_after_invoke": False
+    "delete_after_invoke": True
 }
