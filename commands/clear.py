@@ -1,15 +1,17 @@
 from telebot.async_telebot import AsyncTeleBot
 from telebot.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
+from telebot.types import Message, ReplyKeyboardMarkup, KeyboardButton
 from context import session, profiles
 from utils.md2tgmd import escape
+from utils.prompt import get_prompt
 
 
 async def handle_clear(message: Message, bot: AsyncTeleBot) -> None:
     context = f'{message.message_id}:{message.chat.id}:{message.from_user.id}'
     keyboard = [
         [
-            InlineKeyboardButton("Yes", callback_data=f'clear:yes:{context}'),
-            InlineKeyboardButton("No", callback_data=f'clear:no:{context}'),
+            InlineKeyboardButton("Yes", callback_data=f'{action["name"]}:yes:{context}'),
+            InlineKeyboardButton("No", callback_data=f'{action["name"]}:no:{context}'),
         ],
     ]
 
@@ -27,14 +29,18 @@ async def do_clear(bot: AsyncTeleBot, operation: str, msg_id: int, chat_id: int,
         return
 
     profile = profiles.load(uid)
-    convo_id = profile.get("conversation_id")
+    convo_id = profile["conversation"].get(str(chat_id))
     convo = session.get_convo(uid, convo_id)
     if convo is None:
         return
 
     messages = convo.get("context", [])
-    messages = [msg for msg in messages if (msg["role"] == "system" or msg["chat_id"] != chat_id)]
-    convo["context"] = messages
+    message_ids = [msg["message_id"] for msg in messages if msg["role"] != "system"]
+    prompt = get_prompt(profile)
+    new_message = [prompt] if prompt else []
+
+    convo["context"] = new_message
+    convo["generate_title"] = True
 
     session.save_convo(uid, convo)
 
@@ -45,6 +51,12 @@ async def do_clear(bot: AsyncTeleBot, operation: str, msg_id: int, chat_id: int,
         parse_mode="MarkdownV2"
     )
     await bot.delete_message(chat_id, msg_id)
+
+    if len(message_ids) > 0:
+        try:
+            await bot.delete_messages(chat_id, message_ids)
+        except Exception as e:
+            print(e)
 
 
 def register(bot: AsyncTeleBot, decorator) -> None:

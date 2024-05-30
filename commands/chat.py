@@ -6,6 +6,7 @@ from ask import ask_stream, ask
 from utils.md2tgmd import escape
 from utils.text import get_strip_text, get_timeout_from_text
 from utils.prompt import get_prompt
+from . import create_convo_and_update_profile
 import time
 import asyncio
 
@@ -45,11 +46,7 @@ async def handle_message(message: Message, bot: AsyncTeleBot) -> None:
     convo_id = profile["conversation"].get(chat_id)
     convo = session.get_convo(uid, convo_id)
     if convo is None:
-        prompt = get_prompt(profile)
-        messages = [prompt] if prompt else None
-        convo = session.create_convo(uid, message.chat.id, messages)
-        profile["conversation"][chat_id] = convo["id"]
-        profiles.update_all(uid, profile)
+        convo = create_convo_and_update_profile(uid, message.chat.id, profile)
 
     endpoint = config.get_endpoint(profile.get("endpoint"))
     if endpoint is None:
@@ -81,14 +78,14 @@ async def handle_message(message: Message, bot: AsyncTeleBot) -> None:
             {
                 "role": "user",
                 "content": message_text,
-                'message_id': message.id,
+                'message_id': message.message_id,
                 'chat_id': message.chat.id,
                 'ts': int(time.time()),
             },
             {
                 'role': 'assistant',
                 'content': text,
-                'message_id': message.id,
+                'message_id': reply_msg.message_id,
                 'chat_id': message.chat.id,
                 'ts': int(time.time()),
             }

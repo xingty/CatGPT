@@ -1,9 +1,10 @@
 from telebot.async_telebot import AsyncTeleBot
-from telebot.types import Message, BotCommand
-from context import session
+from telebot.types import BotCommand
+from context import session, profiles
 from pathlib import Path
 from utils.md2tgmd import escape
 from utils.text import messages_to_segments
+from utils.prompt import get_prompt
 from telebot.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
 import importlib
 
@@ -78,7 +79,8 @@ def all_commands() -> list[str]:
     return commands
 
 
-async def show_conversation(chat_id: int, msg_id: int, uid: str, bot: AsyncTeleBot, convo: dict, reply_msg_id: int = None):
+async def show_conversation(chat_id: int, msg_id: int, uid: str, bot: AsyncTeleBot, convo: dict,
+                            reply_msg_id: int = None):
     messages = convo.get("context", [])
     messages = [msg for msg in messages if (msg["role"] != "system" and msg["chat_id"] == chat_id)]
     segments = messages_to_segments(messages)
@@ -107,3 +109,13 @@ async def show_conversation(chat_id: int, msg_id: int, uid: str, bot: AsyncTeleB
             reply_markup=InlineKeyboardMarkup(keyboard),
         )
         last_message_id = reply_msg.message_id
+
+
+def create_convo_and_update_profile(uid: str, chat_id: int, profile: dict, title: str) -> dict:
+    prompt = get_prompt(profile)
+    messages = [prompt] if prompt else None
+    convo = session.create_convo(uid, chat_id, title, messages)
+    profile["conversation"][chat_id] = convo["id"]
+    profiles.update_all(uid, profile)
+
+    return convo
