@@ -1,5 +1,3 @@
-import json
-
 from openai import AsyncOpenAI
 from utils.prompt import get_system_prompt
 
