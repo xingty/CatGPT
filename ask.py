@@ -26,7 +26,6 @@ async def ask_stream(endpoint: dict, body: dict):
     model = body.get('model')
     inject_system_prompt_if_need(messages, endpoint, model)
     assert len(messages) > 0, "messages should not be empty"
-    print(json.dumps(messages, ensure_ascii=False, indent=2))
     response = await client.chat.completions.create(
         model=model,
         messages=messages,
