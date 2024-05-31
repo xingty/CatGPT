@@ -110,7 +110,7 @@ async def show_conversation(chat_id: int, msg_id: int, uid: str, bot: AsyncTeleB
         last_message_id = reply_msg.message_id
 
 
-def create_convo_and_update_profile(uid: str, chat_id: int, profile: dict, title: str) -> dict:
+def create_convo_and_update_profile(uid: str, chat_id: int, profile: dict, title: str = None) -> dict:
     prompt = get_prompt(profile)
     messages = [prompt] if prompt else None
     convo = session.create_convo(uid, chat_id, title, messages)

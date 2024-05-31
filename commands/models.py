@@ -23,7 +23,7 @@ async def handle_models(message: Message, bot: AsyncTeleBot):
     if len(items) > 0:
         keyboard.append(items)
 
-    text = f'current model: `{profile.get("model", "None")}`\n'
+    text = f'current endpoint: `{profile.get("endpoint", "None")}`\ncurrent model: `{profile.get("model", "None")}`\n'
     await bot.send_message(
         chat_id=message.chat.id,
         text=escape(text),

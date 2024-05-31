@@ -1,11 +1,11 @@
+from typing import List
 from telebot.async_telebot import AsyncTeleBot
 from telebot.asyncio_helper import ApiTelegramException
-from telebot.types import Message
+from telebot.types import Message, MessageEntity
 from context import session, profiles, config, get_bot_name
 from ask import ask_stream, ask
 from utils.md2tgmd import escape
-from utils.text import get_strip_text, get_timeout_from_text
-from utils.prompt import get_prompt
+from utils.text import get_timeout_from_text
 from . import create_convo_and_update_profile
 import time
 import asyncio
@@ -14,8 +14,8 @@ import asyncio
 async def is_mention_me(message: Message) -> bool:
     if message.entities is None:
         return False
-    bot_name = await get_bot_name()
 
+    bot_name = await get_bot_name()
     text = message.text
     for entity in message.entities:
         if entity.type == "mention":
@@ -35,10 +35,10 @@ async def send_message(bot: AsyncTeleBot, message: Message, text: str):
 
 
 async def handle_message(message: Message, bot: AsyncTeleBot) -> None:
+    message_text = message.text
     if message.chat.type in ["group", "supergroup", "gigagroup", "channel"]:
-        if not await is_mention_me(message):
-            print("not a mention")
-            return
+        bot_name = await get_bot_name()
+        message_text = message_text.replace(bot_name, "").strip()
 
     uid = str(message.from_user.id)
     chat_id = str(message.chat.id)
@@ -56,7 +56,6 @@ async def handle_message(message: Message, bot: AsyncTeleBot) -> None:
         )
         return
 
-    message_text = get_strip_text(message)
     messages = convo.get("context", []).copy()
     messages = [{"role": m["role"], "content": m["content"]} for m in messages]
     messages.append({

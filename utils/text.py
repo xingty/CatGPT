@@ -44,21 +44,6 @@ def split_to_segments(text: str, search_result: str, length: int = MAX_TEXT_LENG
     return segments
 
 
-def get_strip_text(message: Message) -> str:
-    text = message.text.strip()
-    if message.chat.type == "private":
-        return text
-
-    if not text.startswith("@"):
-        return text
-
-    index = text.find(" ")
-    if index == -1:
-        return text
-
-    return text[index + 1:]
-
-
 def get_timeout_from_text(text: str) -> int:
     text = text.strip()
     try:
