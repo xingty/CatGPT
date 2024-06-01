@@ -15,7 +15,7 @@ def permission_check(func):
         if session.is_enrolled(uid):
             await func(message, bot)
         else:
-            text = "Please enter a valid key to use the system. You can do this by typing '/key key'."
+            text = "Please enter a valid key to use this bot. You can do this by typing '/key key'."
             await bot.reply_to(message, text)
 
     return wrapper
