@@ -2,6 +2,7 @@ from telebot.async_telebot import AsyncTeleBot
 from telebot.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
 from utils.md2tgmd import escape
 from context import profiles, session
+from utils.text import messages_to_segments
 from . import show_conversation
 
 
@@ -72,14 +73,25 @@ async def do_convo_change(bot: AsyncTeleBot, operation: str, msg_id: int, chat_i
         buttons = [[
             InlineKeyboardButton("switch", callback_data=f'{action["name"]}:{op_switch}:{context}'),
             # InlineKeyboardButton("fetch", callback_data=f'{action["name"]}:{op_fetch}:{context}'),
-            InlineKeyboardButton("cancel", callback_data=f'{action["name"]}:{op_cancel}:{context}'),
             InlineKeyboardButton("delete", callback_data=f'{action["name"]}:{op_delete}:{context}'),
+            InlineKeyboardButton("dismiss", callback_data=f'{action["name"]}:{op_cancel}:{context}'),
         ]]
+        messages = convo.get("context", [])
+        print("len", len(messages))
+        fragments = []
+        if len(messages) >= 2:
+            fragments = [messages[-2], messages[-1]]
 
+        summary = ""
+        segments = messages_to_segments(fragments)
+        if len(segments) > 0:
+            summary = segments[0]
+
+        message_preview = f"**What would you like to do on the conversation** `<{convo['title']}>`?\n\n{summary}"
         await bot.send_message(
             chat_id=chat_id,
             parse_mode="MarkdownV2",
-            text=escape(f"What would you like to do on the conversation `<{convo['title']}>`?"),
+            text=escape(message_preview),
             reply_markup=InlineKeyboardMarkup(buttons)
         )
         return
