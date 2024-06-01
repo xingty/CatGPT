@@ -5,18 +5,17 @@ from context import profiles, session
 from . import show_conversation
 
 
-async def handle_convo(message: Message, bot: AsyncTeleBot):
-    uid = str(message.from_user.id)
+async def show_conversation_list(uid: str, msg_id: int, chat_id: int, bot: AsyncTeleBot, edit_msg_id: int = -1):
     profile = profiles.load(uid)
-    convo_id = profile["conversation"].get(str(message.chat.id))
+    convo_id = profile["conversation"].get(str(chat_id))
     current_convo = session.get_convo(uid, convo_id) or {}
-    context = f'{message.message_id}:{message.chat.id}:{uid}'
+    context = f'{msg_id}:{chat_id}:{uid}'
     keyboard = []
     items = []
 
     title = current_convo.get('title', 'None')
     text = f"Current conversation: `{title}` \n\nConversation list:\n"
-    conversations = session.list_conversation(uid, message.chat.id)
+    conversations = session.list_conversation(uid, chat_id)
     for index, convo in enumerate(conversations):
         seq = str(index + 1)
         callback_data = f'{action["name"]}:l_{convo["id"]}:{context}'
@@ -29,11 +28,24 @@ async def handle_convo(message: Message, bot: AsyncTeleBot):
     if len(items) > 0:
         keyboard.append(items)
 
-    await bot.send_message(
-        chat_id=message.chat.id,
-        text=text,
-        reply_markup=InlineKeyboardMarkup(keyboard),
-    )
+    if edit_msg_id <= 0:
+        await bot.send_message(
+            chat_id=chat_id,
+            text=text,
+            reply_markup=InlineKeyboardMarkup(keyboard),
+        )
+    else:
+        await bot.edit_message_text(
+            chat_id=chat_id,
+            message_id=edit_msg_id,
+            text=text,
+            reply_markup=InlineKeyboardMarkup(keyboard),
+        )
+
+
+async def handle_convo(message: Message, bot: AsyncTeleBot):
+    uid = str(message.from_user.id)
+    await show_conversation_list(uid, message.message_id, message.chat.id, bot)
 
 
 async def do_convo_change(bot: AsyncTeleBot, operation: str, msg_id: int, chat_id: int, uid: str, message: Message):
@@ -82,16 +94,23 @@ async def do_convo_change(bot: AsyncTeleBot, operation: str, msg_id: int, chat_i
             bot=bot,
             convo=convo,
         )
+        await bot.delete_message(chat_id=chat_id, message_id=msg_id)
     # elif real_op == "q":  # get content of this conversation
     #     await show_conversation(message, bot, uid, convo)
     elif real_op == "d":  # delete this conversation
         session.delete_convo(uid, conversation_id)
-        await bot.delete_message(chat_id=chat_id, message_id=msg_id)
-
         messages = convo.get("context", [])
         message_ids = [msg["message_id"] for msg in messages if msg["role"] != "system"]
         if len(message_ids) > 0:
             await bot.delete_messages(chat_id=chat_id, message_ids=message_ids)
+
+        await show_conversation_list(
+            uid=uid,
+            msg_id=msg_id,
+            chat_id=chat_id,
+            bot=bot,
+            edit_msg_id=msg_id
+        )
 
     elif real_op == "c":  # cancel
         print(f"cancel operation {conversation_id}")
