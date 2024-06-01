@@ -1,11 +1,10 @@
-from typing import List
 from telebot.async_telebot import AsyncTeleBot
 from telebot.asyncio_helper import ApiTelegramException
-from telebot.types import Message, MessageEntity
+from telebot.types import Message
 from context import session, profiles, config, get_bot_name
 from ask import ask_stream, ask
 from utils.md2tgmd import escape
-from utils.text import get_timeout_from_text
+from utils.text import get_timeout_from_text, MAX_TEXT_LENGTH
 from . import create_convo_and_update_profile
 import time
 import asyncio
@@ -108,6 +107,7 @@ async def do_reply(endpoint: dict, model: str, messages: list, reply_msg: Messag
     buffered = ""
     start = time.time()
     timeout = 1.8
+    text_overflow = False
     async for chunk in ask_stream(endpoint, {
         "model": model,
         "messages": messages,
@@ -115,11 +115,20 @@ async def do_reply(endpoint: dict, model: str, messages: list, reply_msg: Messag
         content = chunk["content"]
         buffered += content if content is not None else ""
         finished = chunk["finished"] == "stop"
+
+        if text_overflow:
+            continue
+
         if (time.time() - start > timeout and len(buffered) >= 18) or finished:
             start = time.time()
             try:
+                message_text = escape(text + buffered)
+                if len(message_text) > MAX_TEXT_LENGTH:
+                    text_overflow = True
+                    continue
+
                 await bot.edit_message_text(
-                    text=escape(text + buffered),
+                    text=message_text,
                     chat_id=reply_msg.chat.id,
                     message_id=reply_msg.message_id,
                     parse_mode="MarkdownV2",
@@ -140,18 +149,30 @@ async def do_reply(endpoint: dict, model: str, messages: list, reply_msg: Messag
                     raise ae
 
     if len(buffered) > 0:
-        text += buffered
         delta = timeout - (time.time() - start)
         if delta > 0:
             await asyncio.sleep(int(delta) + 1)
 
-        await bot.edit_message_text(
-            text=escape(text),
+        text += buffered
+        msg_text = escape(text)
+        if text_overflow or len(msg_text) > MAX_TEXT_LENGTH:
+            text_overflow = True
+            msg_text = escape(text)
+
+        msg = await bot.edit_message_text(
+            text=msg_text,
             chat_id=reply_msg.chat.id,
             message_id=reply_msg.message_id,
             parse_mode="MarkdownV2",
             disable_web_page_preview=True
         )
+
+        if text_overflow:
+            await bot.send_message(
+                chat_id=reply_msg.chat.id,
+                text=escape(buffered),
+                reply_to_message_id=msg.message_id
+            )
 
     return text
 

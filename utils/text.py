@@ -1,6 +1,6 @@
 from telebot.types import Message
 
-MAX_TEXT_LENGTH = 3900
+MAX_TEXT_LENGTH = 4096
 
 
 def messages_to_segments(messages: list, max_length: int = MAX_TEXT_LENGTH):
