@@ -113,8 +113,11 @@ async def do_convo_change(bot: AsyncTeleBot, operation: str, msg_id: int, chat_i
         session.delete_convo(uid, conversation_id)
         messages = convo.get("context", [])
         message_ids = [msg["message_id"] for msg in messages if msg["role"] != "system"]
-        if len(message_ids) > 0:
-            await bot.delete_messages(chat_id=chat_id, message_ids=message_ids)
+        try:
+            if len(message_ids) > 0:
+                await bot.delete_messages(chat_id=chat_id, message_ids=message_ids)
+        except Exception as e:
+            print(e)
 
         await show_conversation_list(
             uid=uid,
