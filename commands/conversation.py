@@ -3,23 +3,8 @@ from telebot.types import Message, InlineKeyboardButton, InlineKeyboardMarkup, I
 from utils.md2tgmd import escape
 from context import session, profiles, config
 from utils.text import messages_to_segments
-from share.github import create_or_update_issue
-from . import show_conversation
+from . import show_conversation, share
 from io import BytesIO
-
-
-async def share(convo: dict):
-    messages = convo.get("context", [])
-    body = messages_to_segments(messages, 65535)[0]
-
-    return await create_or_update_issue(
-        owner=config.share_info.get("owner"),
-        repo=config.share_info.get("repo"),
-        token=config.share_info.get("token"),
-        title=convo.get("title"),
-        label=convo.get("label"),
-        body=body,
-    )
 
 
 async def send_file(bot: AsyncTeleBot, message: Message, convo: dict):

@@ -97,11 +97,6 @@ async def handle_message(message: Message, bot: AsyncTeleBot) -> None:
         except Exception as ie:
             print(ie)
     except Exception as e:
-        # await bot.edit_message_text(
-        #     chat_id=message.chat.id,
-        #     message_id=reply_msg.message_id,
-        #     text=f"Error: {e}"
-        # )
         await bot.send_message(
             chat_id=message.chat.id,
             reply_to_message_id=reply_msg.message_id,

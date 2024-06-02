@@ -3,7 +3,7 @@ from telebot.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
 from utils.md2tgmd import escape
 from context import profiles, session
 from utils.text import messages_to_segments
-from . import show_conversation
+from . import show_conversation, share
 
 
 async def show_conversation_list(uid: str, msg_id: int, chat_id: int, bot: AsyncTeleBot, edit_msg_id: int = -1):
@@ -66,13 +66,13 @@ async def do_convo_change(bot: AsyncTeleBot, operation: str, msg_id: int, chat_i
     if real_op == "l":  # user click the button
         context = f'{message.message_id}:{message.chat.id}:{uid}'
         op_switch = f"s_{conversation_id}"
-        # op_fetch = f"q_{conversation_id}"
+        op_share = f"sr_{conversation_id}"
         op_delete = f"d_{conversation_id}"
         op_cancel = f"c_{conversation_id}"
 
         buttons = [[
             InlineKeyboardButton("switch", callback_data=f'{action["name"]}:{op_switch}:{context}'),
-            # InlineKeyboardButton("fetch", callback_data=f'{action["name"]}:{op_fetch}:{context}'),
+            InlineKeyboardButton("share", callback_data=f'{action["name"]}:{op_share}:{context}'),
             InlineKeyboardButton("delete", callback_data=f'{action["name"]}:{op_delete}:{context}'),
             InlineKeyboardButton("dismiss", callback_data=f'{action["name"]}:{op_cancel}:{context}'),
         ]]
@@ -107,8 +107,14 @@ async def do_convo_change(bot: AsyncTeleBot, operation: str, msg_id: int, chat_i
             convo=convo,
         )
         await bot.delete_message(chat_id=chat_id, message_id=msg_id)
-    # elif real_op == "q":  # get content of this conversation
-    #     await show_conversation(message, bot, uid, convo)
+    elif real_op == "sr":  # get content of this conversation
+        html_url = await share(convo)
+        await bot.send_message(
+            chat_id=chat_id,
+            parse_mode="MarkdownV2",
+            text=escape(f"Share link: {html_url}"),
+            disable_web_page_preview=False
+        )
     elif real_op == "d":  # delete this conversation
         session.delete_convo(uid, conversation_id)
         messages = convo.get("context", [])

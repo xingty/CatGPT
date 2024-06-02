@@ -1,10 +1,11 @@
 from telebot.async_telebot import AsyncTeleBot
 from telebot.types import BotCommand
-from context import session, profiles
+from context import session, profiles, config
 from pathlib import Path
 from utils.md2tgmd import escape
 from utils.text import messages_to_segments
 from utils.prompt import get_prompt
+from share.github import create_or_update_issue
 from telebot.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
 import importlib
 
@@ -127,3 +128,17 @@ def get_profile_text(uid: str, chat_id: int):
     text = f"{text}model: `{profile['model']}`\nendpoint: `{profile['endpoint']}`\nrole: `{profile['role']}`"
 
     return text
+
+
+async def share(convo: dict):
+    messages = convo.get("context", [])
+    body = messages_to_segments(messages, 65535)[0]
+
+    return await create_or_update_issue(
+        owner=config.share_info.get("owner"),
+        repo=config.share_info.get("repo"),
+        token=config.share_info.get("token"),
+        title=convo.get("title"),
+        label=convo.get("label"),
+        body=body,
+    )
