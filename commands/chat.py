@@ -90,13 +90,21 @@ async def handle_message(message: Message, bot: AsyncTeleBot) -> None:
         ]
         session.save_convo(uid, convo)
 
-        generate_title = convo.get("generate_title", True)
-        if generate_title:
-            await do_generate_title(convo, messages, uid, text)
+        try:
+            generate_title = convo.get("generate_title", True)
+            if generate_title:
+                await do_generate_title(convo, messages, uid, text)
+        except Exception as ie:
+            print(ie)
     except Exception as e:
-        await bot.edit_message_text(
+        # await bot.edit_message_text(
+        #     chat_id=message.chat.id,
+        #     message_id=reply_msg.message_id,
+        #     text=f"Error: {e}"
+        # )
+        await bot.send_message(
             chat_id=message.chat.id,
-            message_id=reply_msg.message_id,
+            reply_to_message_id=reply_msg.message_id,
             text=f"Error: {e}"
         )
         return
