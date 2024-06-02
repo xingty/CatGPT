@@ -27,7 +27,7 @@ async def handle_key(message: Message, bot: AsyncTeleBot):
     uid = str(message.from_user.id)
     if session.is_enrolled(uid):
         msg = 'You have already been registered in the system. No need to enter the key again.'
-    elif compare(message.text.replace('/key ', ''), config.access_key):
+    elif compare(message.text.replace('/key', '').strip(), config.access_key):
         enroll(uid)
         username = message.from_user.username
         msg = f'@{username} Your registration is complete. Have fun!"'
