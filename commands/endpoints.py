@@ -5,7 +5,15 @@ from context import profiles, session, config
 
 
 async def handle_endpoints(message: Message, bot: AsyncTeleBot):
+    endpoint_name = message.text.replace("/endpoints", "").strip()
     uid = str(message.from_user.id)
+    # fast switch
+    if len(endpoint_name) > 0:
+        endpoint = config.get_endpoint(endpoint_name)
+        if endpoint is not None:
+            await do_endpoint_change(bot, endpoint_name, message.message_id, message.chat.id, uid, message)
+            return
+
     profile = profiles.load(uid)
     context = f'{message.message_id}:{message.chat.id}:{uid}'
     keyboard = []
