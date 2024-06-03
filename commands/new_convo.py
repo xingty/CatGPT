@@ -38,6 +38,6 @@ def register(bot: AsyncTeleBot, decorator) -> None:
 
 action = {
     "name": 'new',
-    "description": 'start a new conversation',
+    "description": 'start a new conversation: /new [title]',
     # "handler": do_create_topic,
 }

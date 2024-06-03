@@ -76,7 +76,7 @@ def register(bot: AsyncTeleBot, decorator) -> None:
 
 action = {
     "name": 'clear',
-    "description": 'clear context',
+    "description": 'clear context: /clear [delete|all]',
     "handler": do_clear,
 }
 
