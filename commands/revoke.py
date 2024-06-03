@@ -60,7 +60,7 @@ async def do_revoke(bot: AsyncTeleBot, operation: str, msg_id: int, chat_id: int
         await bot.delete_message(chat_id, msg_id)
         return
 
-    convo = get_convo(uid)
+    convo = get_convo(uid, chat_id)
     if convo is None:
         await bot.send_message(
             chat_id=chat_id,
