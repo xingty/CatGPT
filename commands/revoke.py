@@ -1,9 +1,8 @@
-import json
-
 from telebot.async_telebot import AsyncTeleBot
 from telebot.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
-from utils.md2tgmd import escape
+
 from context import session, profiles
+from utils.md2tgmd import escape
 
 
 def get_convo(uid: str, chat_id: int):
@@ -70,14 +69,14 @@ async def do_revoke(bot: AsyncTeleBot, operation: str, msg_id: int, chat_id: int
         return
 
     messages = convo.get("context", [])
-    revoke_messages = []
+    revoke_message_ids = []
     i = len(messages) - 1
-    while i >= 0 and len(revoke_messages) < 2:
+    while i >= 0 and len(revoke_message_ids) < 2:
         if messages[i].get("chat_id") == chat_id:
-            revoke_messages.append(messages.pop(i))
+            revoke_message_ids.append(messages.pop(i)['message_id'])
         i -= 1
 
-    if len(revoke_messages) != 2:
+    if len(revoke_message_ids) != 2:
         await bot.send_message(
             chat_id=chat_id,
             text="Could not find any message in current conversation",
@@ -85,20 +84,14 @@ async def do_revoke(bot: AsyncTeleBot, operation: str, msg_id: int, chat_id: int
         )
         return
 
-    content = ''
-    for m in revoke_messages:
-        content += f'### {m["role"]}\n{m["content"]}\n\n'
-
     await bot.send_message(
         chat_id=chat_id,
-        text=escape(content),
-        reply_to_message_id=msg_id,
-        parse_mode="MarkdownV2"
+        text="Messages revoked",
+        reply_to_message_id=msg_id
     )
+
     session.sync_convo(uid)
-    for m in revoke_messages:
-        if 'message_id' in m and 'chat_id' in m:
-            await bot.delete_message(m['chat_id'], m['message_id'])
+    await bot.delete_messages(chat_id, revoke_message_ids)
 
 
 def register(bot: AsyncTeleBot, decorator) -> None:
