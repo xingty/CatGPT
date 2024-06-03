@@ -5,13 +5,22 @@ from context import session, profiles
 from utils.md2tgmd import escape
 from utils.prompt import get_prompt
 
+DELETE_INSTRUCTIONS = ["delete", "all"]
+
 
 async def handle_clear(message: Message, bot: AsyncTeleBot) -> None:
+    text = message.text.replace("/clear", "").strip()
+    if len(text) > 0 and text in DELETE_INSTRUCTIONS:
+        uid = str(message.from_user.id)
+        await do_clear(bot, text, message.message_id, message.chat.id, uid, message)
+        return
+
     context = f'{message.message_id}:{message.chat.id}:{message.from_user.id}'
     keyboard = [
         [
-            InlineKeyboardButton("Yes", callback_data=f'{action["name"]}:yes:{context}'),
-            InlineKeyboardButton("No", callback_data=f'{action["name"]}:no:{context}'),
+            InlineKeyboardButton("delete", callback_data=f'{action["name"]}:yes:{context}'),
+            InlineKeyboardButton("delete all", callback_data=f'{action["name"]}:all:{context}'),
+            InlineKeyboardButton("dismiss", callback_data=f'{action["name"]}:no:{context}'),
         ],
     ]
 
@@ -24,7 +33,7 @@ async def handle_clear(message: Message, bot: AsyncTeleBot) -> None:
 
 
 async def do_clear(bot: AsyncTeleBot, operation: str, msg_id: int, chat_id: int, uid: str, message: Message) -> None:
-    if operation != "yes":
+    if operation == "no":
         await bot.delete_message(chat_id, msg_id)
         return
 
@@ -41,6 +50,7 @@ async def do_clear(bot: AsyncTeleBot, operation: str, msg_id: int, chat_id: int,
 
     convo["context"] = new_message
     convo["generate_title"] = True
+    convo["title"] = "new topic"
 
     session.save_convo(uid, convo)
 
@@ -52,7 +62,7 @@ async def do_clear(bot: AsyncTeleBot, operation: str, msg_id: int, chat_id: int,
     )
     await bot.delete_message(chat_id, msg_id)
 
-    if len(message_ids) > 0:
+    if len(message_ids) > 0 and operation == "all":
         try:
             await bot.delete_messages(chat_id, message_ids)
         except Exception as e:
