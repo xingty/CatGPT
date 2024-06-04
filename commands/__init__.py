@@ -88,7 +88,7 @@ async def show_conversation(chat_id: int, msg_id: int, uid: str, bot: AsyncTeleB
     if len(segments) == 0:
         await bot.send_message(
             chat_id=chat_id,
-            text=escape(f"Current conversation: **{convo['title']}**\n"),
+            text=escape(f"Current topic: **{convo['title']}**\n"),
             parse_mode="MarkdownV2",
         )
         return
@@ -124,7 +124,7 @@ def create_convo_and_update_profile(uid: str, chat_id: int, profile: dict, title
 def get_profile_text(uid: str, chat_id: int):
     profile = profiles.load(uid)
     convo = session.get_convo(uid, profile["conversation"].get(str(chat_id))) or {}
-    text = f"current conversation: `{convo.get('title', 'None')}`\n"
+    text = f"current topic: `{convo.get('title', 'None')}`\n"
     text = f"{text}model: `{profile['model']}`\nendpoint: `{profile['endpoint']}`\nrole: `{profile['role']}`"
 
     return text

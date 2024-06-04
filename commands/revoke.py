@@ -17,7 +17,7 @@ async def handle_revoke(message: Message, bot: AsyncTeleBot):
     uid = str(message.from_user.id)
     convo = get_convo(uid, message.chat.id)
     if convo is None:
-        await bot.reply_to(message, "Please select a conversation to use.")
+        await bot.reply_to(message, "Please select a topic to use.")
         return
 
     messages = convo.get("context", [])
