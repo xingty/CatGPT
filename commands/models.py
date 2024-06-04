@@ -1,7 +1,7 @@
 from telebot.async_telebot import AsyncTeleBot
 from telebot.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
 from utils.md2tgmd import escape
-from context import profiles, session, config
+from context import profiles, config, get_bot_name
 
 SHORT_NAME = {
     "gpt4": "gpt-4",
@@ -19,10 +19,10 @@ SHORT_NAME = {
 async def handle_models(message: Message, bot: AsyncTeleBot):
     uid = str(message.from_user.id)
     profile = profiles.load(uid)
+    bot_name = await get_bot_name()
     endpoint = config.get_endpoint(profile.get("endpoint", "None"))
-    text = message.text.replace("/models", "").strip()
+    text = message.text.replace("/models", "").replace(bot_name, "").strip()
     models = endpoint.get("models", [])
-
     # fast switch
     if len(text) > 0:
         if text in models:
@@ -86,7 +86,7 @@ def register(bot: AsyncTeleBot, decorator) -> None:
 
 action = {
     "name": 'models',
-    "description": 'list models: /models [model_name]',
+    "description": 'list models: [model_name]',
     "handler": do_model_change,
     "delete_after_invoke": True
 }

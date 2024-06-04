@@ -1,13 +1,14 @@
 from telebot.async_telebot import AsyncTeleBot
-from telebot.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
-from context import session, profiles
+from telebot.types import Message
+from context import session, profiles, get_bot_name
 from utils.md2tgmd import escape
 from utils.prompt import get_prompt
 from . import get_profile_text
 
 
 async def handle_new_topic(message: Message, bot: AsyncTeleBot) -> None:
-    text = message.text.replace('/new', '').strip()
+    bot_name = await get_bot_name()
+    text = message.text.replace('/new', '').replace(bot_name, "").strip()
     uid = str(message.from_user.id)
     await create_convo(bot, message.message_id, message.chat.id, uid, text)
 
@@ -38,6 +39,6 @@ def register(bot: AsyncTeleBot, decorator) -> None:
 
 action = {
     "name": 'new',
-    "description": 'start a new conversation: /new [title]',
+    "description": 'start a new topic: [title]',
     # "handler": do_create_topic,
 }

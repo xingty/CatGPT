@@ -15,7 +15,7 @@ async def show_conversation_list(uid: str, msg_id: int, chat_id: int, bot: Async
     items = []
 
     title = current_convo.get('title', 'None')
-    text = f"Current conversation: `{title}` \n\nConversation list:\n"
+    text = f"Current topic: `{title}` \n\nlist of topics:\n"
     conversations = session.list_conversation(uid, chat_id)
     for index, convo in enumerate(conversations):
         seq = str(index + 1)
@@ -59,7 +59,7 @@ async def do_convo_change(bot: AsyncTeleBot, operation: str, msg_id: int, chat_i
         await bot.send_message(
             chat_id=chat_id,
             parse_mode="MarkdownV2",
-            text=escape(f'conversation `{conversation_id}` not found')
+            text=escape(f'topic `{conversation_id}` not found')
         )
         return
 
@@ -87,7 +87,7 @@ async def do_convo_change(bot: AsyncTeleBot, operation: str, msg_id: int, chat_i
         if len(segments) > 0:
             summary = segments[0]
 
-        message_preview = f"**What would you like to do on the conversation** `<{convo['title']}>`?\n\n{summary}"
+        message_preview = f"**What would you like to do on the topic** `<{convo['title']}>`?\n\n{summary}"
         await bot.send_message(
             chat_id=chat_id,
             parse_mode="MarkdownV2",
@@ -99,15 +99,8 @@ async def do_convo_change(bot: AsyncTeleBot, operation: str, msg_id: int, chat_i
         profile = profiles.load(uid)
         profile["conversation"][str(chat_id)] = conversation_id
         profiles.update_all(uid, profile)
-        await show_conversation(
-            chat_id=chat_id,
-            msg_id=msg_id,
-            uid=uid,
-            bot=bot,
-            convo=convo,
-        )
         await bot.delete_message(chat_id=chat_id, message_id=msg_id)
-    elif real_op == "sr":  # get content of this conversation
+    elif real_op == "sr":  # share this conversation to a share provider
         html_url = await share(convo)
         await bot.send_message(
             chat_id=chat_id,
@@ -146,7 +139,7 @@ def register(bot: AsyncTeleBot, decorator) -> None:
 
 action = {
     "name": 'list',
-    "description": 'all conversations',
+    "description": 'all topics',
     "handler": do_convo_change,
     "delete_after_invoke": False
 }

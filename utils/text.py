@@ -11,7 +11,7 @@ def messages_to_segments(messages: list, max_length: int = MAX_TEXT_LENGTH):
         if m['role'] == 'system':
             continue
 
-        text = f'### {m["role"]}\n{m["content"]}\n\n'
+        text = f'## {m["role"]}\n{m["content"]}\n\n'
         text_len = len(text)
         if total_len + text_len > max_length:
             segments.append(segment)

@@ -1,11 +1,12 @@
 from telebot.async_telebot import AsyncTeleBot
 from telebot.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
 from utils.md2tgmd import escape
-from context import profiles, session, config
+from context import profiles, config, get_bot_name
 
 
 async def handle_endpoints(message: Message, bot: AsyncTeleBot):
-    endpoint_name = message.text.replace("/endpoints", "").strip()
+    bot_name = await get_bot_name()
+    endpoint_name = message.text.replace("/endpoints", "").replace(bot_name, "").strip()
     uid = str(message.from_user.id)
     # fast switch
     if len(endpoint_name) > 0:
@@ -73,7 +74,7 @@ def register(bot: AsyncTeleBot, decorator) -> None:
 
 action = {
     "name": 'endpoints',
-    "description": 'list endpoints: /endpoints [endpoint_name]',
+    "description": 'list endpoints: [endpoint_name]',
     "handler": do_endpoint_change,
     "delete_after_invoke": True
 }

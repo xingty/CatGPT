@@ -1,7 +1,7 @@
 from telebot.async_telebot import AsyncTeleBot
 from telebot.types import Message, InlineKeyboardButton, InlineKeyboardMarkup, InputFile
 from utils.md2tgmd import escape
-from context import session, profiles, config
+from context import session, profiles, config, get_bot_name
 from utils.text import messages_to_segments
 from . import show_conversation, share
 from io import BytesIO
@@ -27,18 +27,31 @@ async def handle_conversation(message: Message, bot: AsyncTeleBot):
     convo_id = profile["conversation"].get(str(message.chat.id))
     convo = session.get_convo(uid, convo_id)
     if convo is None:
-        text = "Conversation not found. Please start a new conversation or switch to a existing one."
+        text = "Topic not found. Please start a new topic or switch to a existing one."
         await bot.reply_to(message, text)
         return
 
-    await show_conversation(
-        chat_id=message.chat.id,
-        msg_id=message.message_id,
-        uid=uid,
-        bot=bot,
-        convo=convo,
-        reply_msg_id=message.message_id
-    )
+    bot_name = await get_bot_name()
+    title = message.text.replace("/topic", "").replace(bot_name, "").strip()
+    if len(title) > 0:
+        convo["title"] = title
+        convo["generate_title"] = False
+        profiles.update_all(uid, profile)
+        await bot.send_message(
+            chat_id=message.chat.id,
+            reply_to_message_id=message.message_id,
+            parse_mode="MarkdownV2",
+            text=escape(f"topic's title has been updated to `{title}`")
+        )
+    else:
+        await show_conversation(
+            chat_id=message.chat.id,
+            msg_id=message.message_id,
+            uid=uid,
+            bot=bot,
+            convo=convo,
+            reply_msg_id=message.message_id
+        )
 
 
 async def handle_share_convo(
@@ -63,7 +76,7 @@ async def handle_share_convo(
             chat_id=chat_id,
             reply_to_message_id=msg_id,
             parse_mode="MarkdownV2",
-            text=escape(f'conversation not found')
+            text=escape(f'topic not found')
         )
         return
 
@@ -87,7 +100,7 @@ async def handle_share_convo(
             chat_id=chat_id,
             reply_to_message_id=msg_id,
             parse_mode="MarkdownV2",
-            text=escape(f"Share this conversation `<{convo['title']}>` to github?"),
+            text=escape(f"Share this topic `<{convo['title']}>` to github?"),
             reply_markup=InlineKeyboardMarkup(buttons)
         )
     elif real_op == "dl":
@@ -114,12 +127,12 @@ async def handle_share_convo(
 
 def register(bot: AsyncTeleBot, decorator) -> None:
     handler = decorator(handle_conversation)
-    bot.register_message_handler(handler, pass_bot=True, commands=['conversation'])
+    bot.register_message_handler(handler, pass_bot=True, commands=[action['name']])
 
 
 action = {
-    "name": "conversation",
-    "description": "current conversation",
+    "name": "topic",
+    "description": "current topic: [title]",
     "handler": handle_share_convo,
     "delete_after_invoke": False
 }

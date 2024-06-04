@@ -1,7 +1,6 @@
 from telebot.async_telebot import AsyncTeleBot
 from telebot.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
-from telebot.types import Message, ReplyKeyboardMarkup, KeyboardButton
-from context import session, profiles
+from context import session, profiles, get_bot_name
 from utils.md2tgmd import escape
 from utils.prompt import get_prompt
 
@@ -9,7 +8,8 @@ DELETE_INSTRUCTIONS = ["delete", "all"]
 
 
 async def handle_clear(message: Message, bot: AsyncTeleBot) -> None:
-    text = message.text.replace("/clear", "").strip()
+    bot_name = await get_bot_name()
+    text = message.text.replace("/clear", "").replace(bot_name, "").strip()
     if len(text) > 0 and text in DELETE_INSTRUCTIONS:
         uid = str(message.from_user.id)
         await do_clear(bot, text, message.message_id, message.chat.id, uid, message)
@@ -76,7 +76,7 @@ def register(bot: AsyncTeleBot, decorator) -> None:
 
 action = {
     "name": 'clear',
-    "description": 'clear context: /clear [delete|all]',
+    "description": 'clear context: [delete|all]',
     "handler": do_clear,
 }
 
