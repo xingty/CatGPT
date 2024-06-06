@@ -77,7 +77,6 @@ async def do_convo_change(bot: AsyncTeleBot, operation: str, msg_id: int, chat_i
             InlineKeyboardButton("dismiss", callback_data=f'{action["name"]}:{op_cancel}:{context}'),
         ]]
         messages = convo.get("context", [])
-        print("len", len(messages))
         fragments = []
         if len(messages) >= 2:
             fragments = [messages[-2], messages[-1]]
@@ -99,6 +98,12 @@ async def do_convo_change(bot: AsyncTeleBot, operation: str, msg_id: int, chat_i
         profile = profiles.load(uid)
         profile["conversation"][str(chat_id)] = conversation_id
         profiles.update_all(uid, profile)
+        await bot.send_message(
+            chat_id=chat_id,
+            parse_mode="MarkdownV2",
+            text=escape(f"Switched to topic `{convo['title']}`"),
+            reply_to_message_id=msg_id
+        )
         await bot.delete_message(chat_id=chat_id, message_id=msg_id)
     elif real_op == "sr":  # share this conversation to a share provider
         html_url = await share(convo)
