@@ -37,6 +37,9 @@ async def ask_stream(endpoint: dict, body: dict):
     )
 
     async for chunk in response:
+        if len(chunk.choices) == 0:
+            continue
+
         choice = chunk.choices[0]
         yield {
             "role": choice.delta.role,
