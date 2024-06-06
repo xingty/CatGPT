@@ -32,18 +32,8 @@ async def handle_conversation(message: Message, bot: AsyncTeleBot):
         return
 
     bot_name = await get_bot_name()
-    title = message.text.replace("/topic", "").replace(bot_name, "").strip()
-    if len(title) > 0:
-        convo["title"] = title
-        convo["generate_title"] = False
-        profiles.update_all(uid, profile)
-        await bot.send_message(
-            chat_id=message.chat.id,
-            reply_to_message_id=message.message_id,
-            parse_mode="MarkdownV2",
-            text=escape(f"topic's title has been updated to `{title}`")
-        )
-    else:
+    instruction = message.text.replace("/topic", "").replace(bot_name, "").strip()
+    if len(instruction) == 0:
         await show_conversation(
             chat_id=message.chat.id,
             msg_id=message.message_id,
@@ -51,6 +41,22 @@ async def handle_conversation(message: Message, bot: AsyncTeleBot):
             bot=bot,
             convo=convo,
             reply_msg_id=message.message_id
+        )
+        return
+
+    if instruction == "share":
+        await do_share(convo, bot, message)
+    elif instruction == "download":
+        await send_file(bot, message, convo)
+    else:
+        convo["title"] = instruction
+        convo["generate_title"] = False
+        profiles.update_all(uid, profile)
+        await bot.send_message(
+            chat_id=message.chat.id,
+            reply_to_message_id=message.message_id,
+            parse_mode="MarkdownV2",
+            text=escape(f"topic's title has been updated to `{instruction}`")
         )
 
 
@@ -107,22 +113,42 @@ async def handle_share_convo(
         await send_file(bot, message, convo)
         await bot.delete_message(message.chat.id, message.message_id)
     elif real_op == "yes":
-        html_url = await share(convo)
-        try:
-            await bot.send_message(
-                chat_id=chat_id,
-                parse_mode="MarkdownV2",
-                text=escape(f"Share link: {html_url}"),
-                disable_web_page_preview=False
-            )
-        except Exception as e:
-            await bot.send_message(
-                chat_id=chat_id,
-                parse_mode="MarkdownV2",
-                text=str(e),
-                disable_web_page_preview=True
-            )
+        await do_share(convo, bot, message)
         await bot.delete_message(message.chat.id, message.message_id)
+        # html_url = await share(convo)
+        # try:
+        #     await bot.send_message(
+        #         chat_id=chat_id,
+        #         parse_mode="MarkdownV2",
+        #         text=escape(f"Share link: {html_url}"),
+        #         disable_web_page_preview=False
+        #     )
+        # except Exception as e:
+        #     await bot.send_message(
+        #         chat_id=chat_id,
+        #         parse_mode="MarkdownV2",
+        #         text=str(e),
+        #         disable_web_page_preview=True
+        #     )
+        # await bot.delete_message(message.chat.id, message.message_id)
+
+
+async def do_share(convo: dict, bot: AsyncTeleBot, message: Message):
+    html_url = await share(convo)
+    try:
+        await bot.send_message(
+            chat_id=message.chat.id,
+            parse_mode="MarkdownV2",
+            text=escape(f"Title: {convo['title']}\nShare link: {html_url}"),
+            disable_web_page_preview=False
+        )
+    except Exception as e:
+        await bot.send_message(
+            chat_id=message.chat.id,
+            parse_mode="MarkdownV2",
+            text=str(e),
+            disable_web_page_preview=True
+        )
 
 
 def register(bot: AsyncTeleBot, decorator) -> None:
