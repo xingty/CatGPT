@@ -44,7 +44,9 @@ async def handle_revoke(message: Message, bot: AsyncTeleBot):
     for m in revoke_messages:
         content += f'### {m["role"]}\n{m["content"]}\n\n'
 
-    content = f'Are you sure? This operation will revoke the messages below:\n\n{content}'
+    content = escape(f'Are you sure? This operation will revoke the messages below:\n\n{content}')
+    if len(content) > 4096:
+        content = content[0:4093] + '...'
 
     await bot.send_message(
         chat_id=message.chat.id,
