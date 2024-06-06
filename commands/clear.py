@@ -4,7 +4,7 @@ from context import session, profiles, get_bot_name
 from utils.md2tgmd import escape
 from utils.prompt import get_prompt
 
-DELETE_INSTRUCTIONS = ["delete", "all"]
+DELETE_INSTRUCTIONS = ["history", "all"]
 
 
 async def handle_clear(message: Message, bot: AsyncTeleBot) -> None:
