@@ -1,8 +1,10 @@
 from openai import AsyncOpenAI
+
 from utils.prompt import get_system_prompt
+from context import Endpoint
 
 
-def inject_system_prompt_if_need(messages: list, endpoint: dict, model: str):
+def inject_system_prompt_if_need(messages: list, model: str):
     if messages[0].get("role") == "system":
         return
 
@@ -14,17 +16,17 @@ def inject_system_prompt_if_need(messages: list, endpoint: dict, model: str):
         })
 
 
-async def ask_stream(endpoint: dict, body: dict):
+async def ask_stream(endpoint: Endpoint, body: dict):
     client = AsyncOpenAI(
-        base_url=endpoint["api_url"],
-        api_key=endpoint["secret_key"]
+        base_url=endpoint.api_url,
+        api_key=endpoint.secret_key
     )
 
     messages = body.get('messages', [])
     model = body.get('model')
-    if model not in endpoint["models"]:
-        model = endpoint.get("default_model")
-    inject_system_prompt_if_need(messages, endpoint, model)
+    if model not in endpoint.models:
+        model = endpoint.default_model
+    inject_system_prompt_if_need(messages, model)
     assert len(messages) > 0, "messages should not be empty"
     response = await client.chat.completions.create(
         model=model,
@@ -48,14 +50,14 @@ async def ask_stream(endpoint: dict, body: dict):
         }
 
 
-async def ask(endpoint: dict, body: dict):
+async def ask(endpoint: Endpoint, body: dict):
     client = AsyncOpenAI(
-        base_url=endpoint["api_url"],
-        api_key=endpoint["secret_key"]
+        base_url=endpoint.api_url,
+        api_key=endpoint.secret_key
     )
 
     response = await client.chat.completions.create(
-        model=endpoint.get('default_model', 'gpt-3.5-turbo'),
+        model=endpoint.default_model or 'gpt-3.5-turbo',
         messages=body.get('messages'),
         temperature=body.get('temperature', 0.7),
         stream=False,

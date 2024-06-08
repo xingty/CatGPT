@@ -1,13 +1,15 @@
+from telebot.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
 from telebot.async_telebot import AsyncTeleBot
 from telebot.types import BotCommand
+
 from context import session, profiles, config
-from pathlib import Path
 from utils.md2tgmd import escape
 from utils.text import messages_to_segments
 from utils.prompt import get_prompt
 from share.github import create_or_update_issue
-from telebot.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
+
 import importlib
+from pathlib import Path
 
 
 def permission_check(func):
@@ -125,7 +127,7 @@ def get_profile_text(uid: str, chat_id: int):
     profile = profiles.load(uid)
     convo = session.get_convo(uid, profile["conversation"].get(str(chat_id))) or {}
     text = f"current topic: `{convo.get('title', 'None')}`\n"
-    text = f"{text}model: `{profile['model']}`\nendpoint: `{profile['endpoint']}`\nrole: `{profile['role']}`"
+    text = f"{text}model: `{profile['model']}`\nendpoint: `{profile['endpoint']}`\nprompt: `{profile['role']}`"
 
     return text
 

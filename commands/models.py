@@ -1,5 +1,6 @@
 from telebot.async_telebot import AsyncTeleBot
 from telebot.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
+
 from utils.md2tgmd import escape
 from context import profiles, config, get_bot_name
 
@@ -22,7 +23,7 @@ async def handle_models(message: Message, bot: AsyncTeleBot):
     bot_name = await get_bot_name()
     endpoint = config.get_endpoint(profile.get("endpoint", "None"))
     text = message.text.replace("/models", "").replace(bot_name, "").strip()
-    models = endpoint.get("models", [])
+    models = endpoint.models or []
     # fast switch
     if len(text) > 0:
         if text in models:
@@ -36,7 +37,7 @@ async def handle_models(message: Message, bot: AsyncTeleBot):
     keyboard = []
     items = []
 
-    for model in endpoint.get("models", []):
+    for model in (endpoint.models or []):
         callback_data = f'{action["name"]}:{model}:{context}'
         if len(items) == 2:
             keyboard.append(items)
@@ -61,7 +62,7 @@ async def do_model_change(bot: AsyncTeleBot, operation: str, msg_id: int, chat_i
     profiles.update_all(uid, profile)
 
     endpoint = config.get_endpoint(profile.get("endpoint", "None"))
-    if operation not in endpoint.get("models", []):
+    if operation not in (endpoint.models or []):
         await bot.send_message(
             chat_id=chat_id,
             reply_to_message_id=msg_id,

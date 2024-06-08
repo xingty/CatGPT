@@ -1,11 +1,14 @@
 from telebot.async_telebot import AsyncTeleBot
 from telebot.asyncio_helper import ApiTelegramException
 from telebot.types import Message
+
 from context import session, profiles, config, get_bot_name
-from ask import ask_stream, ask
-from utils.md2tgmd import escape
+from context import Endpoint
 from utils.text import get_timeout_from_text, MAX_TEXT_LENGTH
 from . import create_convo_and_update_profile
+from ask import ask_stream, ask
+from utils.md2tgmd import escape
+
 import time
 import asyncio
 
@@ -47,7 +50,7 @@ async def handle_message(message: Message, bot: AsyncTeleBot) -> None:
     if convo is None:
         convo = create_convo_and_update_profile(uid, message.chat.id, profile)
 
-    endpoint = config.get_endpoint(profile.get("endpoint"))
+    endpoint: Endpoint = config.get_endpoint(profile.get("endpoint"))
     if endpoint is None:
         await bot.reply_to(
             message=message,
@@ -62,8 +65,8 @@ async def handle_message(message: Message, bot: AsyncTeleBot) -> None:
         "content": message_text
     })
     model = profile.get("model")
-    if model not in endpoint["models"]:
-        model = endpoint["default_model"]
+    if model not in endpoint.models:
+        model = endpoint.default_model
 
     reply_msg = await bot.reply_to(
         message=message,
@@ -105,7 +108,7 @@ async def handle_message(message: Message, bot: AsyncTeleBot) -> None:
         return
 
 
-async def do_reply(endpoint: dict, model: str, messages: list, reply_msg: Message, bot: AsyncTeleBot):
+async def do_reply(endpoint: Endpoint, model: str, messages: list, reply_msg: Message, bot: AsyncTeleBot):
     text = ""
     buffered = ""
     start = time.time()

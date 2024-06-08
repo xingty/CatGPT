@@ -10,8 +10,8 @@ def enroll(uid):
 
     profile = {
         "conversation": {},
-        "model": endpoint["default_model"],
-        "endpoint": endpoint["name"],
+        "model": endpoint.default_model,
+        "endpoint": endpoint.name,
         "role": "System",
         "prompt": None
     }

@@ -6,43 +6,80 @@ import json
 import random
 
 
+class Endpoint:
+
+    def __init__(
+            self,
+            name: str,
+            api_url: str,
+            secret_key: str,
+            models: list[str],
+            default_model: str = None,
+            default_endpoint: bool = False,
+            generate_title: bool = True,
+    ):
+        assert len(name) > 0, "endpoint name can't be empty"
+        assert len(api_url) > 0, "api url can't be empty"
+        assert len(secret_key) > 0, "secret key can't be empty"
+        assert len(models) > 0, "models can't be empty"
+
+        self.name = name
+        self.api_url = api_url
+        self.secret_key = secret_key
+        self.models = models
+        self.generate_title = generate_title
+        self.default_endpoint = default_endpoint
+        self.default_model = default_model
+        if not default_model:
+            self.default_model = models[0]
+
+    def __str__(self):
+        return f"""
+        Endpoint(
+            name={self.name}, 
+            api_url={self.api_url}, 
+            default_model={self.default_model}, 
+            models={self.models}
+        )"""
+
+
 class Configuration:
 
     def __init__(self):
-        self.access_key = ""
-        self.proxy_url = ""
-        self.endpoint_file = None
+        self.access_key: str = ""
+        self.proxy_url: str = ""
         self.share_info = None
+        self.endpoints: [Endpoint] = []
 
-    def get_endpoints(self):
-        return json.loads(self.endpoint_file.read_text())
+    def get_endpoints(self) -> [Endpoint]:
+        return self.endpoints
 
-    def get_default_endpoint(self):
-        endpoints = self.get_endpoints()
-        for e in endpoints:
-            if e.get("default_endpoint", False):
-                return e
-
-        return endpoints[0]
-
-    def get_endpoint(self, endpoint_name: str):
+    def get_default_endpoint(self) -> Endpoint:
         for endpoint in self.get_endpoints():
-            if endpoint['name'] == endpoint_name:
+            if endpoint.get("default_endpoint", False):
+                return endpoint
+
+        return self.get_endpoints()[0]
+
+    def get_endpoint(self, endpoint_name: str) -> Endpoint | None:
+        for endpoint in self.get_endpoints():
+            if endpoint.name == endpoint_name:
                 return endpoint
 
         return None
 
-    def get_title_endpoint(self):
+    def get_title_endpoint(self) -> [Endpoint]:
         endpoints = self.get_endpoints()
-        endpoints = [endpoint for endpoint in endpoints if endpoint.get("generate_title", False)]
+
+        endpoints = [endpoint for endpoint in endpoints if endpoint.generate_title]
 
         return random.choices(endpoints)
 
-    def get_models(self):
+    def get_models(self) -> list[str]:
         endpoints = self.get_endpoints()
         models = set()
         for endpoint in endpoints:
-            models.update(endpoint['models'])
+            models.update(endpoint.models)
 
         return sorted(models)
 
@@ -64,12 +101,20 @@ async def init(options):
     c = load_config()
     assert 'tg_token' in c, "tg_token is required"
     assert 'access_key' in c, "access_key is required"
-    assert 'endpoint' in c, "endpoint is required"
+    assert 'endpoints' in c, "endpoints is required"
 
     config.access_key = c['access_key']
-    config.endpoint_file = Path(c['endpoint'])
     config.proxy_url = c.get('proxy', None)
     config.share_info = c.get("share", None)
+
+    endpoints = c.get('endpoints', [])
+    assert len(endpoints) > 0, "endpoints is required"
+
+    list_endpoints = []
+    for endpoint in endpoints:
+        list_endpoints.append(Endpoint(**endpoint))
+
+    config.endpoints = list_endpoints
 
     global bot
     bot = AsyncTeleBot(

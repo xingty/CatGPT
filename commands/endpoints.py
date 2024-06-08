@@ -1,7 +1,9 @@
 from telebot.async_telebot import AsyncTeleBot
 from telebot.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
+
 from utils.md2tgmd import escape
 from context import profiles, config, get_bot_name
+from context import Endpoint
 
 
 async def handle_endpoints(message: Message, bot: AsyncTeleBot):
@@ -21,7 +23,7 @@ async def handle_endpoints(message: Message, bot: AsyncTeleBot):
     items = []
 
     for endpoint in config.get_endpoints():
-        name = endpoint["name"]
+        name = endpoint.name
         callback_data = f'{action["name"]}:{name}:{context}'
         if len(items) == 2:
             keyboard.append(items)
@@ -41,7 +43,7 @@ async def handle_endpoints(message: Message, bot: AsyncTeleBot):
 
 
 async def do_endpoint_change(bot: AsyncTeleBot, operation: str, msg_id: int, chat_id: int, uid: str, message: Message):
-    endpoint = config.get_endpoint(operation)
+    endpoint: Endpoint = config.get_endpoint(operation)
     if endpoint is None:
         await bot.send_message(
             chat_id=chat_id,
@@ -51,11 +53,11 @@ async def do_endpoint_change(bot: AsyncTeleBot, operation: str, msg_id: int, cha
         )
         return
 
-    models = endpoint["models"]
+    models = endpoint.models
     profile = profiles.load(uid)
     profile["endpoint"] = operation
     if profile.get("model") not in models:
-        profile["model"] = endpoint.get("default_model")
+        profile["model"] = endpoint.default_model
 
     profiles.update_all(uid, profile)
 
