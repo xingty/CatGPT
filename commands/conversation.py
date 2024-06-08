@@ -130,7 +130,7 @@ async def handle_share_convo(
         #         text=str(e),
         #         disable_web_page_preview=True
         #     )
-        # await bot.delete_message(message.chat.id, message.message_id)
+        # await bot.delete_message(message.py.chat.id, message.py.message_id)
 
 
 async def do_share(convo: dict, bot: AsyncTeleBot, message: Message):

@@ -1,6 +1,11 @@
+import asyncio
+import importlib
+from pathlib import Path
+
 from telebot.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
 from telebot.async_telebot import AsyncTeleBot
 from telebot.types import BotCommand
+from telebot.asyncio_helper import RequestTimeout
 
 from context import session, profiles, config
 from utils.md2tgmd import escape
@@ -8,8 +13,32 @@ from utils.text import messages_to_segments
 from utils.prompt import get_prompt
 from share.github import create_or_update_issue
 
-import importlib
-from pathlib import Path
+
+async def send_message(
+        bot: AsyncTeleBot,
+        chat_id: int,
+        reply_id: int,
+        text: str,
+        parse_mode: str = "MarkdownV2",
+        disable_preview: bool = True
+):
+    retry_counter = 0
+    while retry_counter < 3:
+        try:
+            await bot.send_message(
+                chat_id=chat_id,
+                text=escape(text),
+                reply_to_message_id=reply_id,
+                parse_mode=parse_mode,
+                disable_web_page_preview=disable_preview
+            )
+            break
+        except RequestTimeout as e:
+            timeout = retry_counter * 1.5 + 3
+            retry_counter += 1
+            err_msg = f"Sending message timeout error: \n{text[0:10]}...\n{str(e)}\nRetrying after {timeout} seconds..."
+            print(err_msg)
+            await asyncio.sleep(timeout)
 
 
 def permission_check(func):
@@ -19,7 +48,7 @@ def permission_check(func):
             await func(message, bot)
         else:
             text = "Please enter a valid key to use this bot. You can do this by typing '/key key'."
-            await bot.reply_to(message, text)
+            await send_message(bot, message.chat.id, message.message_id, text)
 
     return wrapper
 

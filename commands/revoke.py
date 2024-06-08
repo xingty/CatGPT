@@ -29,7 +29,7 @@ async def handle_revoke(message: Message, bot: AsyncTeleBot):
             break
 
     if len(revoke_messages) != 2:
-        await bot.reply_to(message, "Could not find any message in current conversation")
+        await bot.reply_to(message, "Could not find any message.py in current conversation")
         return
 
     context = f'{message.message_id}:{message.chat.id}:{message.from_user.id}'
@@ -81,7 +81,7 @@ async def do_revoke(bot: AsyncTeleBot, operation: str, msg_id: int, chat_id: int
     if len(revoke_message_ids) != 2:
         await bot.send_message(
             chat_id=chat_id,
-            text="Could not find any message in current conversation",
+            text="Could not find any message.py in current conversation",
             reply_to_message_id=msg_id
         )
         return
@@ -103,6 +103,6 @@ def register(bot: AsyncTeleBot, decorator) -> None:
 
 action = {
     "name": 'revoke',
-    "description": 'revoke message',
+    "description": 'revoke message.py',
     "handler": do_revoke,
 }

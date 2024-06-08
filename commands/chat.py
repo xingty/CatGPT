@@ -150,7 +150,7 @@ async def do_reply(endpoint: Endpoint, model: str, messages: list, reply_msg: Me
                     print(escape(text + buffered))
                 elif ae.error_code != 429:
                     seconds = get_timeout_from_text(ae.description)
-                    timeout = 10 if seconds < 0 else seconds
+                    timeout = 10 if seconds < 0 else seconds + 1
                 else:
                     raise ae
 

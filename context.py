@@ -1,7 +1,10 @@
+from telebot.async_telebot import AsyncTeleBot, asyncio_helper
+
 from session import Session
 from user_profile import UserProfile
-from telebot.async_telebot import AsyncTeleBot, asyncio_helper
-from pathlib import Path
+# from storage import Transaction
+import storage
+
 import json
 import random
 
@@ -14,6 +17,7 @@ class Endpoint:
             api_url: str,
             secret_key: str,
             models: list[str],
+            provider: str = "openai",
             default_model: str = None,
             default_endpoint: bool = False,
             generate_title: bool = True,
@@ -29,6 +33,7 @@ class Endpoint:
         self.models = models
         self.generate_title = generate_title
         self.default_endpoint = default_endpoint
+        self.provider = provider
         self.default_model = default_model
         if not default_model:
             self.default_model = models[0]
@@ -87,13 +92,12 @@ class Configuration:
 session = Session()
 profiles = UserProfile()
 config = Configuration()
+# tx: Transaction | None = None
 bot: AsyncTeleBot | None = None
 bot_name = None
 
 
-async def init(options):
-    assert options.config is not None, "Config file is required"
-
+async def init_configuration(options):
     def load_config():
         with open(options.config, 'r') as f:
             return json.load(f)
@@ -121,6 +125,21 @@ async def init(options):
         token=c['tg_token'],
         disable_web_page_preview=True,
     )
+
+
+async def init_datasource(options):
+    # global tx
+
+    from storage.sqlite3_session_storage import Sqlite3Datasource
+    datasource = Sqlite3Datasource("data.db")
+    # tx = Transaction(datasource)
+    storage.datasource = datasource
+
+
+async def init(options):
+    assert options.config is not None, "Config file is required"
+    await init_configuration(options)
+    await init_datasource(options)
 
     if config.proxy_url is not None:
         asyncio_helper.proxy = config.proxy_url

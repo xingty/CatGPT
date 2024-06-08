@@ -1,5 +1,7 @@
-from pathlib import Path
 from telebot.types import Message
+
+from pathlib import Path
+
 import json
 import uuid
 
@@ -140,16 +142,7 @@ class Session:
         file.write_text(json.dumps(convo_list, ensure_ascii=False))
 
     def enroll(self, uid: str, messages=None) -> list:
-        label = str(uuid.uuid4())
-        convo = [
-            # {
-            #     "id": label.replace("-", "")[:10],
-            #     "label": label,
-            #     "title": "Convo 1",
-            #     "generate_title": True,
-            #     "context": [] if messages is None else messages,
-            # }
-        ]
+        convo = []
         self.context[uid] = convo
         self.append_to_disk(uid, convo)
 
