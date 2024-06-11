@@ -3,7 +3,7 @@ DROP TABLE IF EXISTS service_usage;
 
 create table topic
 (
-    id              TEXT,
+    tid              INTEGER PRIMARY KEY AUTOINCREMENT ,
     label           TEXT,
     chat_id         INTEGER,
     user_id         INTEGER,
@@ -11,7 +11,7 @@ create table topic
     generate_title  INTEGER
 );
 
-create index idx_t_topic_id on topic (id);
+create index idx_t_topic_id on topic (tid);
 
 create table message
 (

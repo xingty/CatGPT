@@ -18,8 +18,8 @@ async def main():
     await context.init(options)
     bot: AsyncTeleBot = context.bot
 
-    await register_commands(bot)
-    await bot.infinity_polling()
+    # await register_commands(bot)
+    # await bot.infinity_polling()
 
 
 if __name__ == '__main__':

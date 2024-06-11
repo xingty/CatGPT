@@ -2,7 +2,6 @@ from telebot.async_telebot import AsyncTeleBot, asyncio_helper
 
 from session import Session
 from user_profile import UserProfile
-# from storage import Transaction
 import storage
 
 import json
@@ -92,7 +91,6 @@ class Configuration:
 session = Session()
 profiles = UserProfile()
 config = Configuration()
-# tx: Transaction | None = None
 bot: AsyncTeleBot | None = None
 bot_name = None
 
@@ -128,12 +126,54 @@ async def init_configuration(options):
 
 
 async def init_datasource(options):
-    # global tx
-
-    from storage.sqlite3_session_storage import Sqlite3Datasource
+    from storage.sqlite3_session_storage import Sqlite3Datasource, Sqlite3TopicStorage
+    from topic import Topic
+    from storage.types import Message
+    import storage.types as types
+    import time
     datasource = Sqlite3Datasource("data.db")
-    # tx = Transaction(datasource)
     storage.datasource = datasource
+
+    topic_storage = Sqlite3TopicStorage()
+    t = Topic(topic_storage)
+
+    record = types.Topic(
+        tid=1,
+        user_id=3,
+        chat_id=1,
+        title="test",
+        generate_title=True,
+        label="1233211234567",
+    )
+
+    await topic_storage.create_topic(record)
+
+    await t.append_message(1,[])
+    convo = await topic_storage.get_topic(1)
+    print(convo)
+    messages = [
+        Message(
+            role="user",
+            content="Hi.",
+            message_id=1,
+            chat_id=1,
+            topic_id=1,
+            ts=int(time.time()),
+        ),
+        Message(
+            role="assistant",
+            content="Hi. How can I assist you today?",
+            message_id=1,
+            chat_id=1,
+            topic_id=1,
+            ts=int(time.time() + 1),
+        )
+    ]
+    await topic_storage.append_message(1, messages)
+
+    # print(await t.get_messages(1))
+    # print(await t.list_topics(3, 1))
+    # await topic_storage.delete_topic(1)
 
 
 async def init(options):
