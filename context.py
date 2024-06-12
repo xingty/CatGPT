@@ -190,6 +190,9 @@ async def init(options):
     if config.proxy_url is not None:
         asyncio_helper.proxy = config.proxy_url
 
+    from migrate import main
+    await main()
+
 
 async def get_bot_name():
     global bot_name

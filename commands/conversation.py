@@ -55,6 +55,7 @@ async def handle_conversation(message: Message, bot: AsyncTeleBot):
         convo.title = instruction
         convo.generate_title = False
         await profiles.update(uid, profile)
+        await topic.update_topic(convo)
         await bot.send_message(
             chat_id=message.chat.id,
             reply_to_message_id=message.message_id,

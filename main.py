@@ -13,9 +13,6 @@ async def main():
         help="Config file",
     )
 
-    from migrate import main
-    await main()
-
     options = parser.parse_args()
     await context.init(options)
     bot: AsyncTeleBot = context.bot

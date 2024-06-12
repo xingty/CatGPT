@@ -44,8 +44,11 @@ class Topic:
 
         await self.storage.remove_messages(topic_id, message_ids)
 
-    async def get_topic(self, topic_id: int, fetch_messages: bool = False) -> types.Topic:
+    async def get_topic(self, topic_id: int, fetch_messages: bool = False) -> [types.Topic | None]:
         topic = await self.storage.get_topic(topic_id)
+        if topic is None:
+            return None
+
         if fetch_messages:
             messages = await self.get_messages([topic_id])
             topic.messages = messages
