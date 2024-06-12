@@ -87,7 +87,6 @@ async def register_commands(bot: AsyncTeleBot) -> None:
             return
         handler = action_provider.get(target)
         if handler is not None:
-            # handler = provider["handler"]
             await handler(
                 bot=bot,
                 operation=operation,
@@ -97,9 +96,6 @@ async def register_commands(bot: AsyncTeleBot) -> None:
                 message=message,
             )
 
-            # delete = provider.get("delete_after_invoke", True)
-            # if delete:
-            #     await bot.delete_message(message.chat.id, message.message_id)
 
 
 def all_modules() -> list[str]:

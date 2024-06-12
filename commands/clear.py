@@ -13,7 +13,7 @@ async def handle_clear(message: Message, bot: AsyncTeleBot) -> None:
     text = message.text.replace("/clear", "").replace(bot_name, "").strip()
     if len(text) > 0 and text in DELETE_INSTRUCTIONS:
         uid = message.from_user.id
-        await do_clear(bot, text, message.message_id, message.chat.id, uid, message)
+        await do_clear(bot, text, str(message.message_id), message.chat.id, uid, message)
         return
 
     context = f'{message.message_id}:{message.chat.id}:{message.from_user.id}'
