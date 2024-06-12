@@ -19,6 +19,7 @@ async def handle_profiles(message: Message, bot: AsyncTeleBot):
 
     if len(items) > 0:
         keyboard.append(items)
+        keyboard.append([InlineKeyboardButton("dismiss", callback_data=f'{action["name"]}:dismiss:{context}')])
 
     profile = await profiles.load(message.from_user.id)
     state_text = await get_profile_text(profile, message.chat.type)
@@ -31,14 +32,19 @@ async def handle_profiles(message: Message, bot: AsyncTeleBot):
     )
 
 
-async def do_profile_change(bot: AsyncTeleBot, operation: str, msg_id: int, chat_id: int, uid: int, message: Message):
+async def do_profile_change(bot: AsyncTeleBot, operation: str, msg_id: str, chat_id: int, uid: int, message: Message):
+    message_id = int(msg_id)
+    if operation == "dismiss":
+        await bot.delete_messages(chat_id, [message_id, message.message_id])
+        return
+
     await profiles.update_prompt(uid, operation)
     profile = await profiles.load(uid)
     text = await get_profile_text(profile, message.chat.type)
 
     await bot.send_message(
         chat_id=chat_id,
-        reply_to_message_id=msg_id,
+        reply_to_message_id=message_id,
         parse_mode="MarkdownV2",
         text=escape(text)
     )

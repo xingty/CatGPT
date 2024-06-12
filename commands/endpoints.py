@@ -33,6 +33,7 @@ async def handle_endpoints(message: Message, bot: AsyncTeleBot):
 
     if len(items) > 0:
         keyboard.append(items)
+        keyboard.append([InlineKeyboardButton("dismiss", callback_data=f'{action["name"]}:dismiss:{context}')])
 
     endpoint_name = profile.endpoint or "None"
     text = f'current endpoint: **{endpoint_name}** \nEndpoints:'
@@ -44,12 +45,16 @@ async def handle_endpoints(message: Message, bot: AsyncTeleBot):
 
 
 async def do_endpoint_change(bot: AsyncTeleBot, operation: str, msg_id: str, chat_id: int, uid: int, message: Message):
-    message_ids = parse_message_id(msg_id)
+    message_id = int(msg_id)
+    if operation == "dismiss":
+        await bot.delete_messages(chat_id, [message_id, message.message_id])
+        return
+
     endpoint: Endpoint = config.get_endpoint(operation)
     if endpoint is None:
         await bot.send_message(
             chat_id=chat_id,
-            reply_to_message_id=message_ids[-1],
+            reply_to_message_id=message_id,
             parse_mode="MarkdownV2",
             text=escape(f'endpoint not found')
         )
@@ -65,12 +70,11 @@ async def do_endpoint_change(bot: AsyncTeleBot, operation: str, msg_id: str, cha
 
     await bot.send_message(
         chat_id=chat_id,
-        reply_to_message_id=message_ids[-1],
+        reply_to_message_id=message_id,
         parse_mode="MarkdownV2",
         text=escape(f'current endpoint: `{operation}`')
     )
-    message_ids.append(message.message_id)
-    await bot.delete_messages(chat_id, message_ids)
+    await bot.delete_messages(chat_id, [message_id, message.message_id])
 
 
 def register(bot: AsyncTeleBot, decorator, action_provider):

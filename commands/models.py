@@ -48,6 +48,7 @@ async def handle_models(message: Message, bot: AsyncTeleBot):
 
     if len(items) > 0:
         keyboard.append(items)
+        keyboard.append([InlineKeyboardButton("dismiss", callback_data=f'{action["name"]}:dismiss:{context}')])
 
     msg_text = f'current endpoint: `{profile.endpoint or "None"}`\ncurrent model: `{profile.model or "None"}`\n'
     await bot.send_message(
@@ -59,14 +60,17 @@ async def handle_models(message: Message, bot: AsyncTeleBot):
 
 
 async def do_model_change(bot: AsyncTeleBot, operation: str, msg_id: str, chat_id: int, uid: int, message: Message):
-    profile = await profiles.load(uid)
+    if operation == "dismiss":
+        await bot.delete_messages(chat_id, [message.message_id, msg_id])
+        return
 
-    message_ids = parse_message_id(msg_id)
+    profile = await profiles.load(uid)
+    message_id = int(msg_id)
     endpoint = config.get_endpoint(profile.endpoint or "None")
     if endpoint is None:
         await bot.send_message(
             chat_id=chat_id,
-            reply_to_message_id=message_ids[-1],
+            reply_to_message_id=message_id,
             parse_mode="MarkdownV2",
             text=escape(f'endpoint not found')
         )
@@ -75,7 +79,7 @@ async def do_model_change(bot: AsyncTeleBot, operation: str, msg_id: str, chat_i
     if operation not in (endpoint.models or []):
         await bot.send_message(
             chat_id=chat_id,
-            reply_to_message_id=message_ids[-1],
+            reply_to_message_id=message_id,
             parse_mode="MarkdownV2",
             text=escape(f'current endpoint does not support the model `{operation}`')
         )
@@ -89,8 +93,7 @@ async def do_model_change(bot: AsyncTeleBot, operation: str, msg_id: str, chat_i
         parse_mode="MarkdownV2",
         text=escape(f'current model: `{operation}`')
     )
-    message_ids.append(message.message_id)
-    await bot.delete_messages(chat_id, message_ids)
+    await bot.delete_messages(chat_id, [message_id, message.message_id])
 
 
 def register(bot: AsyncTeleBot, decorator, action_provider):
