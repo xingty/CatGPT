@@ -37,6 +37,7 @@ class Sqlite3Datasource(Datasource):
             with open(schema_file) as f:
                 schema = f.read()
                 conn.executescript(schema)
+            conn.execute("pragma journal_mode=wal;")
             conn.close()
 
         self.pool.put_nowait(sqlite3.connect(self.db_file))
