@@ -34,7 +34,8 @@ create table profile
     private INTEGER,
     channel INTEGER,
     groups INTEGER,
-    blocked INTEGER
+    blocked INTEGER,
+    unique (uid)
 );
 
 create index idx_profile_uid on profile (uid);
