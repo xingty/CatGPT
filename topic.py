@@ -70,6 +70,11 @@ class Topic:
 
     async def create_topic(self, topic: types.Topic) -> types.Topic:
         topic.tid = await self.storage.create_topic(topic)
+        if topic.messages:
+            for m in topic.messages:
+                m.topic_id = topic.tid
+            await self.storage.append_message(topic.tid, topic.messages)
+
         return topic
 
     async def update_topic(self, topic: types.Topic):

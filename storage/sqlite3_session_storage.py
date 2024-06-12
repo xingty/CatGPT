@@ -120,11 +120,11 @@ class Sqlite3TopicStorage(types.TopicStorage, tx.Transactional):
         cursor = t.connection.execute(sql, columns)
         topic_id = cursor.lastrowid
 
-        if len(topic.messages) > 0:
-            for m in topic.messages:
-                m.topic_id = topic_id
-
-            await self.append_message(topic_id, topic.messages)
+        # if len(topic.messages) > 0:
+        #     for m in topic.messages:
+        #         m.topic_id = topic_id
+        #
+        #     await self.append_message(topic_id, topic.messages)
 
         return topic_id
 
