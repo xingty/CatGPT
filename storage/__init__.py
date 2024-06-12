@@ -1,4 +1,3 @@
-from contextvars import ContextVar
 from abc import ABC, abstractmethod
 
 from .types import Topic, Message

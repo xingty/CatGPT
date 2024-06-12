@@ -9,7 +9,7 @@ from context import Endpoint
 async def handle_endpoints(message: Message, bot: AsyncTeleBot):
     bot_name = await get_bot_name()
     endpoint_name = message.text.replace("/endpoints", "").replace(bot_name, "").strip()
-    uid = str(message.from_user.id)
+    uid = message.from_user.id
     # fast switch
     if len(endpoint_name) > 0:
         endpoint = config.get_endpoint(endpoint_name)
@@ -17,7 +17,7 @@ async def handle_endpoints(message: Message, bot: AsyncTeleBot):
             await do_endpoint_change(bot, endpoint_name, message.message_id, message.chat.id, uid, message)
             return
 
-    profile = profiles.load(uid)
+    profile = await profiles.load(uid)
     context = f'{message.message_id}:{message.chat.id}:{uid}'
     keyboard = []
     items = []
@@ -33,7 +33,7 @@ async def handle_endpoints(message: Message, bot: AsyncTeleBot):
     if len(items) > 0:
         keyboard.append(items)
 
-    endpoint_name = profile.get("endpoint", "None")
+    endpoint_name = profile.endpoint or "None"
     text = f'current endpoint: **{endpoint_name}** \nEndpoints:'
     await bot.send_message(
         chat_id=message.chat.id,
@@ -42,7 +42,7 @@ async def handle_endpoints(message: Message, bot: AsyncTeleBot):
     )
 
 
-async def do_endpoint_change(bot: AsyncTeleBot, operation: str, msg_id: int, chat_id: int, uid: str, message: Message):
+async def do_endpoint_change(bot: AsyncTeleBot, operation: str, msg_id: int, chat_id: int, uid: int, message: Message):
     endpoint: Endpoint = config.get_endpoint(operation)
     if endpoint is None:
         await bot.send_message(
@@ -54,12 +54,12 @@ async def do_endpoint_change(bot: AsyncTeleBot, operation: str, msg_id: int, cha
         return
 
     models = endpoint.models
-    profile = profiles.load(uid)
-    profile["endpoint"] = operation
-    if profile.get("model") not in models:
-        profile["model"] = endpoint.default_model
+    profile = await profiles.load(uid)
+    profile.endpoint = operation
+    if profile.model not in models:
+        profile.model = endpoint.default_model
 
-    profiles.update_all(uid, profile)
+    await profiles.update(uid, profile)
 
     await bot.send_message(
         chat_id=chat_id,

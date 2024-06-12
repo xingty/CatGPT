@@ -1,17 +1,18 @@
-from telebot.types import Message
+from storage import types
+
 
 MAX_TEXT_LENGTH = 4096
 
 
-def messages_to_segments(messages: list, max_length: int = MAX_TEXT_LENGTH):
+def messages_to_segments(messages: list[types.Message], max_length: int = MAX_TEXT_LENGTH):
     segment = ''
     total_len = 0
     segments = []
     for m in messages:
-        if m['role'] == 'system':
+        if m.role == 'system':
             continue
 
-        text = f'## {m["role"]}\n{m["content"]}\n\n'
+        text = f'## {m.role}\n{m.content}\n\n'
         text_len = len(text)
         if total_len + text_len > max_length:
             segments.append(segment)

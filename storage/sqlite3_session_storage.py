@@ -1,7 +1,6 @@
 import asyncio
 import sqlite3
 import os
-import types as t2
 
 from storage import Datasource, types, tx, Topic
 
@@ -12,13 +11,15 @@ class ConnectionProxy:
         self.datasource = datasource
 
     def __getattr__(self, name):
-        # 通用方法代理
         attr = getattr(self._connection, name)
         if callable(attr):
             def wrapper(*args, **kwargs):
-                result = attr(*args, **kwargs)
-                if name == "close":
-                    self.datasource.release()
+                result = None
+                try:
+                    result = attr(*args, **kwargs)
+                finally:
+                    if name == "close":
+                        self.datasource.release()
                 return result
 
             return wrapper
@@ -48,7 +49,8 @@ class Sqlite3Datasource(Datasource):
         return sqlite3.connect(self.db_file)
 
     def release(self):
-        self.pool.put_nowait(sqlite3.connect(self.db_file))
+        if self.pool.empty():
+            self.pool.put_nowait(sqlite3.connect(self.db_file))
 
 
 class Sqlite3TopicStorage(types.TopicStorage, tx.Transactional):
@@ -61,11 +63,12 @@ class Sqlite3TopicStorage(types.TopicStorage, tx.Transactional):
         conn.executemany(sql, tuples)
 
     @tx.transactional(tx_type="read")
-    async def get_messages(self, topic_id: int) -> list[types.Message]:
+    async def get_messages(self, topic_ids: list[int]) -> list[types.Message]:
         transaction = await self.retrieve_transaction()
         conn = transaction.connection
+        placeholders = ','.join(['?'] * len(topic_ids))
 
-        records = conn.execute("select * from message where topic_id = ?", (topic_id,)).fetchall()
+        records = conn.execute(f"select * from message where topic_id IN ({placeholders})", topic_ids).fetchall()
         if not records:
             return []
 
@@ -95,11 +98,14 @@ class Sqlite3TopicStorage(types.TopicStorage, tx.Transactional):
     async def delete_topic(self, topic_id: int):
         t = await self.retrieve_transaction()
         t.connection.execute("delete from topic where tid = ?", (topic_id,))
-        await self.remove_message_by_topic(topic_id)
+        # await self.remove_message_by_topic(topic_id)
 
     @tx.transactional(tx_type="write")
-    async def remove_messages(self, topic_id: int, message_id: int):
-        pass
+    async def remove_messages(self, topic_id: int, message_ids: list[int]):
+        t = await self.retrieve_transaction()
+        placeholders = ','.join(['?'] * len(message_ids))
+        sql = f"delete from message where topic_id = ? and message_id in ({placeholders})"
+        t.connection.execute(sql, (topic_id, *message_ids))
 
     @tx.transactional(tx_type="write")
     async def remove_message_by_topic(self, topic_id: int):
@@ -107,10 +113,108 @@ class Sqlite3TopicStorage(types.TopicStorage, tx.Transactional):
         t.connection.execute("delete from message where topic_id = ?", (topic_id,))
 
     @tx.transactional(tx_type="write")
-    async def create_topic(self, topic: Topic):
+    async def create_topic(self, topic: Topic) -> int:
         t = await self.retrieve_transaction()
         sql = "insert into topic (label, chat_id, user_id, title, generate_title) values (?,?,?,?,?)"
         columns = (topic.label, topic.chat_id, topic.user_id, topic.title, topic.generate_title)
         cursor = t.connection.execute(sql, columns)
-        print(cursor)
-        print(cursor.lastrowid)
+        topic_id = cursor.lastrowid
+
+        if len(topic.messages) > 0:
+            for m in topic.messages:
+                m.topic_id = topic_id
+
+            await self.append_message(topic_id, topic.messages)
+
+        return topic_id
+
+    @tx.transactional(tx_type="write")
+    async def update_topic(self, topic: Topic):
+        t = await self.retrieve_transaction()
+        sql = "update topic set label = ?, chat_id = ?, user_id = ?, title = ?, generate_title = ? where tid = ?"
+        columns = (topic.label, topic.chat_id, topic.user_id, topic.title, topic.generate_title, topic.tid)
+        t.connection.execute(sql, columns)
+
+
+class Sqlite3ProfileStorage(types.ProfileStorage, tx.Transactional):
+
+    @tx.transactional(tx_type="write")
+    async def create_profile(self, profile: types.Profile) -> int:
+        t = await self.retrieve_transaction()
+        sql = "insert into profile (uid, model, endpoint, prompt, private, channel, groups) values (?,?,?,?,?,?,?)"
+        columns = (
+            profile.uid,
+            profile.model,
+            profile.endpoint,
+            profile.prompt,
+            profile.private,
+            profile.channel,
+            profile.groups,
+        )
+        cursor = t.connection.execute(sql, columns)
+        return cursor.lastrowid
+
+    @tx.transactional(tx_type="read")
+    async def get_profile(self, uid: int) -> [types.Profile | None]:
+        t = await self.retrieve_transaction()
+        sql = "select * from profile where uid = ?"
+        row = t.connection.execute(sql, (uid,)).fetchone()
+        if not row:
+            return None
+
+        return types.Profile(*row)
+
+    async def get_conversation_id(self, uid: int, chat_type: str) -> int:
+        field = "groups"
+        if chat_type in ["private", "channel"]:
+            field = chat_type
+
+        t = await self.retrieve_transaction()
+        sql = f"select {field} from profile where uid = ?"
+        row = t.connection.execute(sql, (uid,)).fetchone()
+        if not row:
+            return 0
+
+        return row[0]
+
+    @tx.transactional(tx_type="write")
+    async def update_conversation_id(self, uid: int, chat_type: str, conversation_id: int):
+        field = "groups"
+        if chat_type in ["private", "channel"]:
+            field = chat_type
+
+        t = await self.retrieve_transaction()
+        sql = f"update profile set {field} = ? where uid = ?"
+        t.connection.execute(sql, (conversation_id, uid))
+
+    @tx.transactional(tx_type="write")
+    async def update_prompt(self, uid: int, prompt: str):
+        t = await self.retrieve_transaction()
+        sql = f"update profile set prompt = ? where uid = ?"
+        t.connection.execute(sql, (prompt, uid))
+
+    @tx.transactional(tx_type="write")
+    async def update_model(self, uid: int, model: str):
+        t = await self.retrieve_transaction()
+        sql = f"update profile set model = ? where uid = ?"
+        t.connection.execute(sql, (model, uid))
+
+    @tx.transactional(tx_type="write")
+    async def update_endpoint(self, uid: int, endpoint: str):
+        t = await self.retrieve_transaction()
+        sql = f"update profile set endpoint = ? where uid = ?"
+        t.connection.execute(sql, (endpoint, uid))
+
+    @tx.transactional(tx_type="write")
+    async def update(self, uid: int, profile: types.Profile):
+        t = await self.retrieve_transaction()
+        sql = f"update profile set model = ?, endpoint = ?, prompt = ?, private = ?, channel = ?, groups = ? where uid = ?"
+        t.connection.execute(sql, (
+            profile.model,
+            profile.endpoint,
+            profile.prompt,
+            profile.private,
+            profile.channel,
+            profile.groups,
+            uid
+        ))

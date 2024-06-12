@@ -27,10 +27,10 @@ class Topic:
     def __init__(
             self,
             tid: int,
-            title: str,
             label: str,
             chat_id: int,
             user_id: int,
+            title: str,
             generate_title: bool
     ):
         self.tid = tid
@@ -46,17 +46,59 @@ class Topic:
                f"user_id={self.user_id}, messages={self.messages})"
 
 
+class Profile:
+    def __init__(
+            self,
+            uid: int,
+            model: str,
+            endpoint: str,
+            prompt: str,
+            private: int,
+            channel: int,
+            groups: int,
+            blocked: int = 0
+    ):
+        self.uid = uid
+        self.model = model
+        self.endpoint = endpoint
+        self.prompt = prompt
+        self.private = private
+        self.channel = channel
+        self.groups = groups
+        self.blocked = blocked
+
+    def get_conversation_id(self, chat_type: str):
+        if chat_type == "private":
+            return self.private
+        elif chat_type == "channel":
+            return self.channel
+        else:
+            return self.groups
+
+    def set_conversation_id(self, conversation_id: int, chat_type: str):
+        if chat_type == "private":
+            self.private = conversation_id
+        elif chat_type == "channel":
+            self.channel = conversation_id
+        else:
+            self.groups = conversation_id
+
+    def __repr__(self):
+        return f"Profile(uid={self.uid}, model={self.model}, endpoint={self.endpoint}, prompt={self.prompt}, " \
+               f"chat={self.private}, channel={self.channel}, groups={self.groups})"
+
+
 class TopicStorage(ABC):
     @abstractmethod
     async def append_message(self, topic_id: int, message: [Message]):
         pass
 
     @abstractmethod
-    async def get_messages(self, topic_id: int) -> list[Message]:
+    async def get_messages(self, topic_id: list[int]) -> list[Message]:
         pass
 
     @abstractmethod
-    async def remove_messages(self, topic_id: int, message_id: int):
+    async def remove_messages(self, topic_id: int, message_ids: list[int]):
         pass
 
     @abstractmethod
@@ -77,4 +119,42 @@ class TopicStorage(ABC):
 
     @abstractmethod
     async def create_topic(self, topic: Topic):
+        pass
+
+    @abstractmethod
+    async def update_topic(self, topic: Topic):
+        pass
+
+
+class ProfileStorage:
+    @abstractmethod
+    async def create_profile(self, profile: Profile) -> int:
+        pass
+
+    @abstractmethod
+    async def get_profile(self, uid: int) -> [Profile | None]:
+        pass
+
+    @abstractmethod
+    async def get_conversation_id(self, uid: int, chat_type: str) -> int:
+        pass
+
+    @abstractmethod
+    async def update_conversation_id(self, uid: int, chat_type: str, conversation_id: int):
+        pass
+
+    @abstractmethod
+    async def update_prompt(self, uid: int, prompt: str):
+        pass
+
+    @abstractmethod
+    async def update_model(self, uid: int, model: str):
+        pass
+
+    @abstractmethod
+    async def update_endpoint(self, uid: int, endpoint: str):
+        pass
+
+    @abstractmethod
+    async def update(self, uid: int, profile: Profile):
         pass

@@ -2,12 +2,13 @@ from telebot.async_telebot import AsyncTeleBot
 from telebot.asyncio_helper import ApiTelegramException
 from telebot.types import Message
 
-from context import session, profiles, config, get_bot_name
+from context import profiles, config, get_bot_name, topic
 from context import Endpoint
 from utils.text import get_timeout_from_text, MAX_TEXT_LENGTH
 from . import create_convo_and_update_profile
 from ask import ask_stream, ask
 from utils.md2tgmd import escape
+from storage import types
 
 import time
 import asyncio
@@ -42,15 +43,21 @@ async def handle_message(message: Message, bot: AsyncTeleBot) -> None:
         bot_name = await get_bot_name()
         message_text = message_text.replace(bot_name, "").strip()
 
-    uid = str(message.from_user.id)
-    chat_id = str(message.chat.id)
-    profile = profiles.load(uid)
-    convo_id = profile["conversation"].get(chat_id)
-    convo = session.get_convo(uid, convo_id)
-    if convo is None:
-        convo = create_convo_and_update_profile(uid, message.chat.id, profile)
+    uid = message.from_user.id
+    chat_id = message.chat.id
+    profile = await profiles.load(uid)
+    convo_id = profile.get_conversation_id(message.chat.type)
 
-    endpoint: Endpoint = config.get_endpoint(profile.get("endpoint"))
+    convo = await topic.get_topic(convo_id, fetch_messages=True)
+    if convo is None:
+        convo = await create_convo_and_update_profile(
+            uid=uid,
+            chat_id=chat_id,
+            profile=profile,
+            chat_type=message.chat.type,
+        )
+
+    endpoint: Endpoint = config.get_endpoint(profile.endpoint)
     if endpoint is None:
         await bot.reply_to(
             message=message,
@@ -58,13 +65,14 @@ async def handle_message(message: Message, bot: AsyncTeleBot) -> None:
         )
         return
 
-    messages = convo.get("context", []).copy()
-    messages = [{"role": m["role"], "content": m["content"]} for m in messages]
-    messages.append({
+    # messages = convo.messages
+    messages_payload = [{"role": m.role, "content": m.content} for m in convo.messages]
+    messages_payload.append({
         "role": "user",
         "content": message_text
     })
-    model = profile.get("model")
+    print(messages_payload)
+    model = profile.model
     if model not in endpoint.models:
         model = endpoint.default_model
 
@@ -74,29 +82,15 @@ async def handle_message(message: Message, bot: AsyncTeleBot) -> None:
     )
 
     try:
-        text = await do_reply(endpoint, model, messages, reply_msg, bot)
-        convo["context"] += [
-            {
-                "role": "user",
-                "content": message_text,
-                'message_id': message.message_id,
-                'chat_id': message.chat.id,
-                'ts': int(time.time()),
-            },
-            {
-                'role': 'assistant',
-                'content': text,
-                'message_id': reply_msg.message_id,
-                'chat_id': message.chat.id,
-                'ts': int(time.time()),
-            }
-        ]
-        session.save_convo(uid, convo)
+        text = await do_reply(endpoint, model, messages_payload, reply_msg, bot)
+        message.text = message_text
+        reply_msg.text = text
+        await topic.append_messages(convo_id, message, reply_msg)
 
         try:
-            generate_title = convo.get("generate_title", True)
+            generate_title = convo.generate_title
             if generate_title:
-                await do_generate_title(convo, messages, uid, text)
+                await do_generate_title(convo, messages_payload, uid, text)
         except Exception as ie:
             print(ie)
     except Exception as e:
@@ -183,7 +177,7 @@ async def do_reply(endpoint: Endpoint, model: str, messages: list, reply_msg: Me
     return text
 
 
-async def do_generate_title(convo: dict, messages: list, uid: str, text: str):
+async def do_generate_title(convo: types.Topic, messages: list, uid: int, text: str):
     endpoint = config.get_title_endpoint()[0]
     if endpoint is None:
         return
@@ -205,9 +199,9 @@ async def do_generate_title(convo: dict, messages: list, uid: str, text: str):
         }
     )
 
-    convo["generate_title"] = False
-    convo["title"] = title
-    session.save_convo(uid, convo)
+    convo.generate_title = False
+    convo.title = title
+    await topic.update_topic(convo)
 
 
 def message_check(func):

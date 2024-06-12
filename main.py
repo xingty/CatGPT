@@ -1,5 +1,4 @@
 from telebot.async_telebot import AsyncTeleBot
-from commands import register_commands
 import asyncio
 import argparse
 import context
@@ -18,8 +17,9 @@ async def main():
     await context.init(options)
     bot: AsyncTeleBot = context.bot
 
-    # await register_commands(bot)
-    # await bot.infinity_polling()
+    from commands import register_commands
+    await register_commands(bot)
+    await bot.infinity_polling()
 
 
 if __name__ == '__main__':

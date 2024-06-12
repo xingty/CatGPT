@@ -1,4 +1,4 @@
-from datetime import datetime
+from storage import types
 
 MODELS = {
     "gpt-4o": "2023-10",
@@ -28,12 +28,16 @@ def get_system_prompt(model):
     return None
 
 
-def get_prompt(profile: dict):
-    prompt = profile.get("prompt")
+def get_prompt(profile) -> types.Message | None:
+    prompt = profile.prompt
     if prompt:
-        return {
-            "role": "system",
-            "content": prompt
-        }
+        return types.Message(
+            role="system",
+            content=prompt,
+            message_id=0,
+            chat_id=0,
+            ts=0,
+            topic_id=0
+        )
 
     return None

@@ -1,28 +1,66 @@
 from telebot.async_telebot import AsyncTeleBot
 from telebot.types import Message
 
-from context import session, profiles, get_bot_name
+from context import topic, profiles, get_bot_name
 from utils.md2tgmd import escape
 from utils.prompt import get_prompt
 from . import get_profile_text
+from storage import tx
 
 
 async def handle_new_topic(message: Message, bot: AsyncTeleBot) -> None:
     bot_name = await get_bot_name()
     text = message.text.replace('/new', '').replace(bot_name, "").strip()
-    uid = str(message.from_user.id)
-    await create_convo(bot, message.message_id, message.chat.id, uid, text)
+    uid = message.from_user.id
+
+    await create_convo(
+        bot=bot,
+        msg_id=message.message_id,
+        chat_id=message.chat.id,
+        uid=uid,
+        chat_type=message.chat.type,
+        title=text
+    )
 
 
-async def create_convo(bot: AsyncTeleBot, msg_id: int, chat_id: int, uid: str, title: str = None) -> None:
-    profile = profiles.load(uid)
+@tx.transactional(tx_type="write")
+async def create_topic_and_update_profile(
+        chat_id: int,
+        uid: int,
+        chat_type: str,
+        title: str = None,
+        messages: list = None
+):
+    convo = await topic.new_topic(
+        title=title,
+        chat_id=chat_id,
+        user_id=uid,
+        messages=messages,
+        generate_title=title is None or len(title) == 0
+    )
+    await profiles.update_conversation_id(uid, chat_type, convo.tid)
+
+
+async def create_convo(
+        bot: AsyncTeleBot,
+        msg_id: int,
+        chat_id: int,
+        uid: int,
+        chat_type: str,
+        title: str = None
+) -> None:
+    profile = await profiles.load(uid)
     prompt = get_prompt(profile)
     messages = [prompt] if prompt else None
-    convo = session.create_convo(uid, chat_id, title, messages)
-    profile["conversation"][str(chat_id)] = convo.get("id")
-    profiles.update_all(uid, profile)
+    await create_topic_and_update_profile(
+        chat_id=chat_id,
+        uid=uid,
+        chat_type=chat_type,
+        title=title,
+        messages=messages
+    )
 
-    text = get_profile_text(uid, chat_id)
+    text = await get_profile_text(profile, chat_type)
     text = "A new topic has been created.\n" + text
 
     await bot.send_message(

@@ -1,6 +1,7 @@
 from telebot.async_telebot import AsyncTeleBot
 from telebot.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
-from context import session, profiles, get_bot_name
+
+from context import topic, profiles, get_bot_name
 from utils.md2tgmd import escape
 from utils.prompt import get_prompt
 
@@ -11,7 +12,7 @@ async def handle_clear(message: Message, bot: AsyncTeleBot) -> None:
     bot_name = await get_bot_name()
     text = message.text.replace("/clear", "").replace(bot_name, "").strip()
     if len(text) > 0 and text in DELETE_INSTRUCTIONS:
-        uid = str(message.from_user.id)
+        uid = message.from_user.id
         await do_clear(bot, text, message.message_id, message.chat.id, uid, message)
         return
 
@@ -32,27 +33,20 @@ async def handle_clear(message: Message, bot: AsyncTeleBot) -> None:
     )
 
 
-async def do_clear(bot: AsyncTeleBot, operation: str, msg_id: int, chat_id: int, uid: str, message: Message) -> None:
+async def do_clear(bot: AsyncTeleBot, operation: str, msg_id: int, chat_id: int, uid: int, message: Message) -> None:
     if operation == "no":
         await bot.delete_message(chat_id, msg_id)
         return
 
-    profile = profiles.load(uid)
-    convo_id = profile["conversation"].get(str(chat_id))
-    convo = session.get_convo(uid, convo_id)
+    profile = await profiles.load(uid)
+    convo_id = profile.get_conversation_id(message.chat.type)
+    convo = await topic.get_topic(convo_id, fetch_messages=True)
     if convo is None:
         return
 
-    messages = convo.get("context", [])
-    message_ids = [msg["message_id"] for msg in messages if msg["role"] != "system"]
+    message_ids = [msg.message_id for msg in convo.messages if msg.role != "system"]
     prompt = get_prompt(profile)
-    new_message = [prompt] if prompt else []
-
-    convo["context"] = new_message
-    convo["generate_title"] = True
-    convo["title"] = "new topic"
-
-    session.save_convo(uid, convo)
+    await topic.clear_topic(convo, prompt)
 
     await bot.send_message(
         chat_id=chat_id,

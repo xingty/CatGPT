@@ -18,10 +18,11 @@ SHORT_NAME = {
 
 
 async def handle_models(message: Message, bot: AsyncTeleBot):
-    uid = str(message.from_user.id)
-    profile = profiles.load(uid)
+    uid = message.from_user.id
+    profile = await profiles.load(uid)
     bot_name = await get_bot_name()
-    endpoint = config.get_endpoint(profile.get("endpoint", "None"))
+    endpoint = config.get_endpoint(profile.endpoint or "None")
+
     text = message.text.replace("/models", "").replace(bot_name, "").strip()
     models = endpoint.models or []
     # fast switch
@@ -29,7 +30,7 @@ async def handle_models(message: Message, bot: AsyncTeleBot):
         if text in models:
             await do_model_change(bot, text, message.message_id, message.chat.id, uid, message)
             return
-        elif SHORT_NAME[text] in models:
+        elif SHORT_NAME.get(text, None) in models:
             await do_model_change(bot, SHORT_NAME[text], message.message_id, message.chat.id, uid, message)
             return
 
@@ -47,21 +48,28 @@ async def handle_models(message: Message, bot: AsyncTeleBot):
     if len(items) > 0:
         keyboard.append(items)
 
-    text = f'current endpoint: `{profile.get("endpoint", "None")}`\ncurrent model: `{profile.get("model", "None")}`\n'
+    msg_text = f'current endpoint: `{profile.endpoint or "None"}`\ncurrent model: `{profile.model or "None"}`\n'
     await bot.send_message(
         chat_id=message.chat.id,
-        text=escape(text),
+        text=escape(msg_text),
         parse_mode="MarkdownV2",
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
 
 
-async def do_model_change(bot: AsyncTeleBot, operation: str, msg_id: int, chat_id: int, uid: str, message: Message):
-    profile = profiles.load(uid)
-    profile["model"] = operation
-    profiles.update_all(uid, profile)
+async def do_model_change(bot: AsyncTeleBot, operation: str, msg_id: int, chat_id: int, uid: int, message: Message):
+    profile = await profiles.load(uid)
 
-    endpoint = config.get_endpoint(profile.get("endpoint", "None"))
+    endpoint = config.get_endpoint(profile.endpoint or "None")
+    if endpoint is None:
+        await bot.send_message(
+            chat_id=chat_id,
+            reply_to_message_id=msg_id,
+            parse_mode="MarkdownV2",
+            text=escape(f'endpoint not found')
+        )
+        return
+
     if operation not in (endpoint.models or []):
         await bot.send_message(
             chat_id=chat_id,
@@ -71,7 +79,8 @@ async def do_model_change(bot: AsyncTeleBot, operation: str, msg_id: int, chat_i
         )
         return
 
-    # await bot.delete_message(chat_id, msg_id)
+    profile.model = operation
+    await profiles.update_model(uid, profile.model)
 
     await bot.send_message(
         chat_id=chat_id,

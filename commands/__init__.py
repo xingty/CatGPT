@@ -7,11 +7,12 @@ from telebot.async_telebot import AsyncTeleBot
 from telebot.types import BotCommand
 from telebot.asyncio_helper import RequestTimeout
 
-from context import session, profiles, config
+from context import profiles, config, topic
 from utils.md2tgmd import escape
 from utils.text import messages_to_segments
 from utils.prompt import get_prompt
 from share.github import create_or_update_issue
+from storage import types
 
 
 async def send_message(
@@ -43,8 +44,8 @@ async def send_message(
 
 def permission_check(func):
     async def wrapper(message: Message, bot: AsyncTeleBot):
-        uid = str(message.from_user.id)
-        if session.is_enrolled(uid):
+        uid = message.from_user.id
+        if await profiles.is_enrolled(uid):
             await func(message, bot)
         else:
             text = "Please enter a valid key to use this bot. You can do this by typing '/key key'."
@@ -75,7 +76,7 @@ async def register_commands(bot: AsyncTeleBot) -> None:
     async def callback_handler(call):
         message: Message = call.message
         segments = call.data.split(':')
-        uid = str(call.from_user.id)
+        uid = call.from_user.id
         target = segments[0]
         operation = segments[1]
         message_id = int(segments[2])
@@ -111,15 +112,20 @@ def all_commands() -> list[str]:
     return commands
 
 
-async def show_conversation(chat_id: int, msg_id: int, uid: str, bot: AsyncTeleBot, convo: dict,
-                            reply_msg_id: int = None):
-    messages = convo.get("context", [])
-    messages = [msg for msg in messages if (msg["role"] != "system" and msg["chat_id"] == chat_id)]
+async def show_conversation(
+        chat_id: int,
+        msg_id: int,
+        uid: int, bot: AsyncTeleBot,
+        convo: types.Topic,
+        reply_msg_id: int = None
+):
+    messages: list[types.Message] = convo.messages or []
+    messages = [msg for msg in messages if (msg.role != "system" and msg.chat_id == chat_id)]
     segments = messages_to_segments(messages)
     if len(segments) == 0:
         await bot.send_message(
             chat_id=chat_id,
-            text=escape(f"Current topic: **{convo['title']}**\n"),
+            text=escape(f"Current topic: **{convo.title}**\n"),
             parse_mode="MarkdownV2",
         )
         return
@@ -127,8 +133,8 @@ async def show_conversation(chat_id: int, msg_id: int, uid: str, bot: AsyncTeleB
     last_message_id = reply_msg_id
     context = f'{msg_id}:{chat_id}:{uid}'
     keyboard = [[
-        InlineKeyboardButton("Share", callback_data=f'conversation:share_{convo["id"]}:{context}'),
-        InlineKeyboardButton("Download", callback_data=f'conversation:dl_{convo["id"]}:{context}')
+        InlineKeyboardButton("Share", callback_data=f'topic:share_{convo.tid}:{context}'),
+        InlineKeyboardButton("Download", callback_data=f'topic:dl_{convo.tid}:{context}')
     ]]
     for content in segments:
         reply_msg: Message = await bot.send_message(
@@ -142,34 +148,53 @@ async def show_conversation(chat_id: int, msg_id: int, uid: str, bot: AsyncTeleB
         last_message_id = reply_msg.message_id
 
 
-def create_convo_and_update_profile(uid: str, chat_id: int, profile: dict, title: str = None) -> dict:
+async def create_convo_and_update_profile(
+        uid: int,
+        chat_id: int,
+        profile: types.Profile,
+        chat_type: str,
+        title: str = None
+) -> types.Topic:
     prompt = get_prompt(profile)
     messages = [prompt] if prompt else None
-    convo = session.create_convo(uid, chat_id, title, messages)
-    profile["conversation"][chat_id] = convo["id"]
-    profiles.update_all(uid, profile)
+
+    convo = await topic.new_topic(
+        title=title,
+        chat_id=chat_id,
+        user_id=uid,
+        messages=messages,
+        generate_title=title is None or len(title) == 0
+    )
+
+    profile.set_conversation_id(convo.tid, chat_type)
+    await profiles.update_conversation_id(uid, chat_type, convo.tid)
 
     return convo
 
 
-def get_profile_text(uid: str, chat_id: int):
-    profile = profiles.load(uid)
-    convo = session.get_convo(uid, profile["conversation"].get(str(chat_id))) or {}
-    text = f"current topic: `{convo.get('title', 'None')}`\n"
-    text = f"{text}model: `{profile['model']}`\nendpoint: `{profile['endpoint']}`\nprompt: `{profile['role']}`"
+async def get_profile_text(profile: types.Profile, chat_type: str):
+    convo_title = "None"
+    convo_id = profile.get_conversation_id(chat_type)
+    if convo_id:
+        convo = await topic.get_topic(convo_id)
+        if convo:
+            convo_title = convo.title
+
+    text = f"current topic: `{convo_title}`\n"
+    text = f"{text}model: `{profile.model}`\nendpoint: `{profile.endpoint}`\nprompt: `{profile.prompt}`"
 
     return text
 
 
-async def share(convo: dict):
-    messages = convo.get("context", [])
+async def share(convo: types.Topic):
+    messages = convo.messages
     body = messages_to_segments(messages, 65535)[0]
 
     return await create_or_update_issue(
         owner=config.share_info.get("owner"),
         repo=config.share_info.get("repo"),
         token=config.share_info.get("token"),
-        title=convo.get("title"),
-        label=convo.get("label"),
+        title=convo.title,
+        label=convo.label,
         body=body,
     )

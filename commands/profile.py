@@ -4,7 +4,6 @@ from telebot.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
 from utils.md2tgmd import escape
 from context import profiles
 from . import get_profile_text
-import json
 
 
 async def handle_profiles(message: Message, bot: AsyncTeleBot):
@@ -21,7 +20,8 @@ async def handle_profiles(message: Message, bot: AsyncTeleBot):
     if len(items) > 0:
         keyboard.append(items)
 
-    state_text = get_profile_text(str(message.from_user.id), message.chat.id)
+    profile = await profiles.load(message.from_user.id)
+    state_text = await get_profile_text(profile, message.chat.type)
 
     await bot.send_message(
         chat_id=message.chat.id,
@@ -31,16 +31,15 @@ async def handle_profiles(message: Message, bot: AsyncTeleBot):
     )
 
 
-async def do_profile_change(bot: AsyncTeleBot, operation: str, msg_id: int, chat_id: int, uid: str, message: Message):
-    profile = profiles.update_preset(uid, operation).copy()
-    del profile["prompt"]
-    text = json.dumps(profile, indent=2, ensure_ascii=False)
+async def do_profile_change(bot: AsyncTeleBot, operation: str, msg_id: int, chat_id: int, uid: int, message: Message):
+    profile = await profiles.update_preset(uid, operation)
+    text = await get_profile_text(profile, message.chat.type)
 
     await bot.send_message(
         chat_id=chat_id,
         reply_to_message_id=msg_id,
         parse_mode="MarkdownV2",
-        text=escape(f'```json\n{text}\n```')
+        text=escape(text)
     )
 
 

@@ -1,20 +1,23 @@
-from telebot.async_telebot import AsyncTeleBot
-from telebot.types import Message, InlineKeyboardButton, InlineKeyboardMarkup, InputFile
-from utils.md2tgmd import escape
-from context import session, profiles, config, get_bot_name
-from utils.text import messages_to_segments
-from . import show_conversation, share
 from io import BytesIO
 
+from telebot.async_telebot import AsyncTeleBot
+from telebot.types import Message, InlineKeyboardButton, InlineKeyboardMarkup, InputFile
 
-async def send_file(bot: AsyncTeleBot, message: Message, convo: dict):
-    messages = convo.get("context", [])
-    messages = [msg for msg in messages if (msg["role"] != "system" and msg["chat_id"] == message.chat.id)]
+from utils.md2tgmd import escape
+from context import profiles, config, topic, get_bot_name
+from utils.text import messages_to_segments
+from . import show_conversation, share
+from storage import types
+
+
+async def send_file(bot: AsyncTeleBot, message: Message, convo: types.Topic):
+    messages: list[types.Message] = convo.messages or []
+    messages = [msg for msg in messages if (msg.role != "system" and msg.chat_id == message.chat.id)]
     segment = messages_to_segments(messages, 65536)[0]
     file_object = BytesIO(segment.encode("utf-8"))
-    file_object.name = f"{convo['title']}.md"
+    file_object.name = f"{convo.title}.md"
     file = InputFile(file_object)
-    file.file_name = f"{convo['title']}.md"
+    file.file_name = f"{convo.title}.md"
     await bot.send_document(
         chat_id=message.chat.id,
         document=file,
@@ -22,10 +25,10 @@ async def send_file(bot: AsyncTeleBot, message: Message, convo: dict):
 
 
 async def handle_conversation(message: Message, bot: AsyncTeleBot):
-    uid = str(message.from_user.id)
-    profile = profiles.load(uid)
-    convo_id = profile["conversation"].get(str(message.chat.id))
-    convo = session.get_convo(uid, convo_id)
+    uid = message.from_user.id
+    profile = await profiles.load(uid)
+    convo_id = profile.get_conversation_id(message.chat.type)
+    convo = await topic.get_topic(convo_id, fetch_messages=True)
     if convo is None:
         text = "Topic not found. Please start a new topic or switch to a existing one."
         await bot.reply_to(message, text)
@@ -49,9 +52,9 @@ async def handle_conversation(message: Message, bot: AsyncTeleBot):
     elif instruction == "download":
         await send_file(bot, message, convo)
     else:
-        convo["title"] = instruction
-        convo["generate_title"] = False
-        profiles.update_all(uid, profile)
+        convo.title = instruction
+        convo.generate_title = False
+        await profiles.update(uid, profile)
         await bot.send_message(
             chat_id=message.chat.id,
             reply_to_message_id=message.message_id,
@@ -70,13 +73,14 @@ async def handle_share_convo(
 ):
     segments = operation.split('_')
     real_op = segments[0]
+    print("=" * 30)
 
     if real_op == "no":
         await bot.delete_message(message.chat.id, message.message_id)
         return
 
     convo_id = segments[1]
-    convo = session.get_convo(uid, convo_id)
+    convo = await topic.get_topic(int(convo_id), fetch_messages=True)
     if convo is None:
         await bot.send_message(
             chat_id=chat_id,
@@ -106,7 +110,7 @@ async def handle_share_convo(
             chat_id=chat_id,
             reply_to_message_id=msg_id,
             parse_mode="MarkdownV2",
-            text=escape(f"Share this topic `<{convo['title']}>` to github?"),
+            text=escape(f"Share this topic `<{convo.title}>` to github?"),
             reply_markup=InlineKeyboardMarkup(buttons)
         )
     elif real_op == "dl":
@@ -115,31 +119,15 @@ async def handle_share_convo(
     elif real_op == "yes":
         await do_share(convo, bot, message)
         await bot.delete_message(message.chat.id, message.message_id)
-        # html_url = await share(convo)
-        # try:
-        #     await bot.send_message(
-        #         chat_id=chat_id,
-        #         parse_mode="MarkdownV2",
-        #         text=escape(f"Share link: {html_url}"),
-        #         disable_web_page_preview=False
-        #     )
-        # except Exception as e:
-        #     await bot.send_message(
-        #         chat_id=chat_id,
-        #         parse_mode="MarkdownV2",
-        #         text=str(e),
-        #         disable_web_page_preview=True
-        #     )
-        # await bot.delete_message(message.py.chat.id, message.py.message_id)
 
 
-async def do_share(convo: dict, bot: AsyncTeleBot, message: Message):
+async def do_share(convo: types.Topic, bot: AsyncTeleBot, message: Message):
     html_url = await share(convo)
     try:
         await bot.send_message(
             chat_id=message.chat.id,
             parse_mode="MarkdownV2",
-            text=escape(f"Title: {convo['title']}\nShare link: {html_url}"),
+            text=escape(f"Title: {convo.title}\nShare link: {html_url}"),
             disable_web_page_preview=False
         )
     except Exception as e:

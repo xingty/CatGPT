@@ -13,7 +13,7 @@ class TxState(enum.Enum):
     Close = 3
 
 
-class Transactional(abc.ABC):
+class Transactional:
     async def get_transaction(self, tx_type="read"):
         return await get_transaction(tx_type)
 
