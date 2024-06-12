@@ -2,6 +2,7 @@ from telebot.async_telebot import AsyncTeleBot
 from telebot.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
 
 from utils.md2tgmd import escape
+from utils.text import parse_message_id
 from context import profiles, topic
 from utils.text import messages_to_segments
 from . import share
@@ -27,7 +28,7 @@ async def show_conversation_list(
     text = f"Current topic: `{title}` \n\nlist of topics:\n"
     conversations = await topic.list_topics(int(uid), chat_id)
     for index, convo in enumerate(conversations):
-        callback_data = f'{action["name"]}:l_{convo.tid}:{context}'
+        callback_data = f'list_tips:{convo.tid}:{context}'
         if len(items) == 5:
             keyboard.append(items)
             items = []
@@ -36,6 +37,7 @@ async def show_conversation_list(
 
     if len(items) > 0:
         keyboard.append(items)
+        keyboard.append([InlineKeyboardButton("dismiss", callback_data=f'list_tips:dismiss:{context}')])
 
     if edit_msg_id <= 0:
         await bot.send_message(
@@ -57,11 +59,12 @@ async def handle_convo(message: Message, bot: AsyncTeleBot):
     await show_conversation_list(uid, message.message_id, message.chat.id, bot, message.chat.type)
 
 
-async def do_convo_change(bot: AsyncTeleBot, operation: str, msg_id: int, chat_id: int, uid: int, message: Message):
+async def do_convo_change(bot: AsyncTeleBot, operation: str, msg_id: str, chat_id: int, uid: int, message: Message):
     segs = operation.split('_')
     real_op = segs[0]
     conversation_id = int(segs[1])
 
+    message_ids = parse_message_id(msg_id)
     convo = await topic.get_topic(conversation_id, fetch_messages=True)
     if convo is None:
         await bot.send_message(
@@ -71,46 +74,14 @@ async def do_convo_change(bot: AsyncTeleBot, operation: str, msg_id: int, chat_i
         )
         return
 
-    if real_op == "l":  # user click the button
-        context = f'{message.message_id}:{message.chat.id}:{uid}'
-        op_switch = f"s_{conversation_id}"
-        op_share = f"sr_{conversation_id}"
-        op_delete = f"d_{conversation_id}"
-        op_cancel = f"c_{conversation_id}"
-
-        buttons = [[
-            InlineKeyboardButton("switch", callback_data=f'{action["name"]}:{op_switch}:{context}'),
-            InlineKeyboardButton("share", callback_data=f'{action["name"]}:{op_share}:{context}'),
-            InlineKeyboardButton("delete", callback_data=f'{action["name"]}:{op_delete}:{context}'),
-            InlineKeyboardButton("dismiss", callback_data=f'{action["name"]}:{op_cancel}:{context}'),
-        ]]
-        messages = convo.messages
-        fragments = []
-        if len(messages) >= 2:
-            fragments = [messages[-2], messages[-1]]
-
-        summary = ""
-        segments = messages_to_segments(fragments)
-        if len(segments) > 0:
-            summary = segments[0]
-
-        message_preview = f"**What would you like to do on the topic** `<{convo.title}>`?\n\n{summary}"
-        await bot.send_message(
-            chat_id=chat_id,
-            parse_mode="MarkdownV2",
-            text=escape(message_preview),
-            reply_markup=InlineKeyboardMarkup(buttons)
-        )
-        return
     elif real_op == "s":  # switch to this conversation
         await profiles.update_conversation_id(uid, message.chat.type, conversation_id)
         await bot.send_message(
             chat_id=chat_id,
             parse_mode="MarkdownV2",
             text=escape(f"Switched to topic `{convo.title}`"),
-            reply_to_message_id=msg_id
+            reply_to_message_id=message_ids[0]
         )
-        await bot.delete_message(chat_id=chat_id, message_id=msg_id)
     elif real_op == "sr":  # share this conversation to a share provider
         html_url = await share(convo)
         await bot.send_message(
@@ -121,32 +92,80 @@ async def do_convo_change(bot: AsyncTeleBot, operation: str, msg_id: int, chat_i
         )
     elif real_op == "d":  # delete this conversation
         await topic.remove_topic(conversation_id)
-        message_ids = [msg.message_id for msg in convo.messages if msg.role != "system"]
-        try:
-            if len(message_ids) > 0:
-                await bot.delete_messages(chat_id=chat_id, message_ids=message_ids)
-        except Exception as e:
-            print(e)
-
+        # message_ids = [msg.message_id for msg in convo.messages if msg.role != "system"]
+        # try:
+        #     if len(message_ids) > 0:
+        #         await bot.delete_messages(chat_id=chat_id, message_ids=message_ids)
+        # except Exception as e:
+        #     print(e)
         await show_conversation_list(
             uid=uid,
-            msg_id=msg_id,
+            msg_id=message_ids[0],
             chat_id=chat_id,
             bot=bot,
             chat_type=message.chat.type,
-            edit_msg_id=msg_id
+            edit_msg_id=message_ids[1]
         )
 
     elif real_op == "c":  # cancel
-        print(f"cancel operation {conversation_id}")
+        print("on click dismiss")
 
-    await bot.delete_message(chat_id=message.chat.id, message_id=message.message_id)
+    await bot.delete_message(chat_id, message.message_id)
+
+
+async def do_handle_tips(
+        bot: AsyncTeleBot,
+        operation: str,
+        msg_id: str,
+        chat_id: int,
+        uid: int,
+        message: Message
+):
+    if operation == "dismiss":
+        await bot.delete_messages(chat_id, [message.message_id, int(msg_id)])
+        return
+
+    conversation_id = int(operation)
+    convo = await topic.get_topic(conversation_id, fetch_messages=True)
+    message_id = int(msg_id)
+    offset = message.message_id - message_id
+
+    context = f'{message_id},{offset}:{message.chat.id}:{uid}'
+    op_switch = f"s_{conversation_id}"
+    op_share = f"sr_{conversation_id}"
+    op_delete = f"d_{conversation_id}"
+    op_cancel = f"c_{conversation_id}"
+
+    buttons = [[
+        InlineKeyboardButton("switch", callback_data=f'{action["name"]}:{op_switch}:{context}'),
+        InlineKeyboardButton("share", callback_data=f'{action["name"]}:{op_share}:{context}'),
+        InlineKeyboardButton("delete", callback_data=f'{action["name"]}:{op_delete}:{context}'),
+        InlineKeyboardButton("dismiss", callback_data=f'{action["name"]}:{op_cancel}:{context}'),
+    ]]
+    messages = convo.messages
+    fragments = []
+    if len(messages) >= 2:
+        fragments = [messages[-2], messages[-1]]
+
+    summary = ""
+    segments = messages_to_segments(fragments)
+    if len(segments) > 0:
+        summary = segments[0]
+
+    message_preview = f"**What would you like to do on the topic** `<{convo.title}>`?\n\n{summary}"
+    await bot.send_message(
+        chat_id=chat_id,
+        parse_mode="MarkdownV2",
+        text=escape(message_preview),
+        reply_markup=InlineKeyboardMarkup(buttons)
+    )
 
 
 def register(bot: AsyncTeleBot, decorator, action_provider):
     handler = decorator(handle_convo)
     bot.register_message_handler(handler, pass_bot=True, commands=[action['name']])
 
+    action_provider["list_tips"] = do_handle_tips
     action_provider[action["name"]] = do_convo_change
 
     return action

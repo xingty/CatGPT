@@ -172,7 +172,7 @@ def register(bot: AsyncTeleBot, decorator, action_provider):
 
 action = {
     "name": "topic",
-    "description": "current topic: [title]",
+    "description": "current topic: [share|download|title]",
     "delete_after_invoke": False,
     "order": 30,
 }
