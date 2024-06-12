@@ -13,12 +13,16 @@ async def main():
         help="Config file",
     )
 
+    from migrate import main
+    await main()
+
     options = parser.parse_args()
     await context.init(options)
     bot: AsyncTeleBot = context.bot
 
     from commands import register_commands
     await register_commands(bot)
+    print("CatGPT is running...")
     await bot.infinity_polling()
 
 

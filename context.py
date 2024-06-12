@@ -132,10 +132,6 @@ async def init_datasource(options):
     global profiles
     from storage.sqlite3_session_storage import Sqlite3Datasource, Sqlite3TopicStorage, Sqlite3ProfileStorage
 
-    # from topic import Topic
-    # from storage.types import Message
-    # import storage.types as types
-    # import time
     datasource = Sqlite3Datasource("data.db")
     storage.datasource = datasource
     topic_storage = Sqlite3TopicStorage()
