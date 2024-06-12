@@ -211,6 +211,7 @@ ENV/
 # mkdocs documentation
 /site
 
+data.db
 config.json
 endpoints.json
 sessions/
