@@ -39,6 +39,7 @@ async def create_topic_and_update_profile(
         generate_title=title is None or len(title) == 0
     )
     await profiles.update_conversation_id(uid, chat_type, convo.tid)
+    return convo
 
 
 async def create_convo(
@@ -52,7 +53,7 @@ async def create_convo(
     profile = await profiles.load(uid)
     prompt = get_prompt(profiles.get_prompt(profile.prompt))
     messages = [prompt] if prompt else None
-    await create_topic_and_update_profile(
+    convo = await create_topic_and_update_profile(
         chat_id=chat_id,
         uid=uid,
         chat_type=chat_type,
@@ -60,6 +61,7 @@ async def create_convo(
         messages=messages
     )
 
+    profile.set_conversation_id(convo.tid, chat_type)
     text = await get_profile_text(profile, chat_type)
     text = "A new topic has been created.\n" + text
 
