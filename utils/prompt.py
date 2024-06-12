@@ -28,8 +28,7 @@ def get_system_prompt(model):
     return None
 
 
-def get_prompt(profile) -> types.Message | None:
-    prompt = profile.prompt
+def get_prompt(prompt) -> types.Message | None:
     if prompt:
         return types.Message(
             role="system",

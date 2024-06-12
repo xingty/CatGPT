@@ -89,5 +89,6 @@ class UserProfile:
             groups=0
         )
 
-    async def get_prompt(self, prompt) -> str:
-        return self.presets.get(prompt, "")
+    def get_prompt(self, prompt) -> str:
+        prompt = self.presets.get(prompt, {})
+        return prompt.get('prompt', '')
