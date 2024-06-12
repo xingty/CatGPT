@@ -1,5 +1,6 @@
 from telebot.async_telebot import AsyncTeleBot
 from telebot.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
+from telebot.types import BotCommand
 
 from context import profiles, topic
 from utils.md2tgmd import escape
@@ -57,9 +58,10 @@ async def handle_revoke(message: Message, bot: AsyncTeleBot):
     )
 
 
-async def do_revoke(bot: AsyncTeleBot, operation: str, msg_id: int, chat_id: int, uid: int, message: Message):
+async def do_revoke(bot: AsyncTeleBot, operation: str, msg_id: str, chat_id: int, uid: int, message: Message):
+    message_id = int(msg_id)
     if operation != 'yes':
-        await bot.delete_message(chat_id, msg_id)
+        await bot.delete_messages(chat_id, [message_id, message.message_id])
         return
 
     convo = await get_convo(uid, message.chat.type)
@@ -67,7 +69,7 @@ async def do_revoke(bot: AsyncTeleBot, operation: str, msg_id: int, chat_id: int
         await bot.send_message(
             chat_id=chat_id,
             text="Conversation not found",
-            reply_to_message_id=msg_id
+            reply_to_message_id=message_id
         )
         return
 
@@ -83,27 +85,32 @@ async def do_revoke(bot: AsyncTeleBot, operation: str, msg_id: int, chat_id: int
         await bot.send_message(
             chat_id=chat_id,
             text="Could not find any message.py in current conversation",
-            reply_to_message_id=msg_id
+            reply_to_message_id=message_id
         )
         return
 
     await topic.remove_messages(convo.tid, revoke_message_ids)
+    revoke_message_ids.append(message.message_id)
     await bot.delete_messages(chat_id, revoke_message_ids)
 
     await bot.send_message(
         chat_id=chat_id,
         text="Messages revoked",
-        reply_to_message_id=msg_id
+        reply_to_message_id=message_id
     )
 
 
-def register(bot: AsyncTeleBot, decorator) -> None:
+def register(bot: AsyncTeleBot, decorator, action_provider):
     handler = decorator(handle_revoke)
     bot.register_message_handler(handler, pass_bot=True, commands=[action['name']])
+
+    action_provider[action["name"]] = do_revoke
+
+    return action
 
 
 action = {
     "name": 'revoke',
     "description": 'revoke message.py',
-    "handler": do_revoke,
+    "order": 70,
 }

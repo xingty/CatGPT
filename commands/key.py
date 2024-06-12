@@ -36,6 +36,6 @@ async def handle_key(message: Message, bot: AsyncTeleBot):
     )
 
 
-def register(bot: AsyncTeleBot, decorator) -> None:
+def register(bot: AsyncTeleBot, decorator, provider) -> None:
     bot.register_message_handler(handle_key, regexp=r"/key ", pass_bot=True, content_types=["text"])
 

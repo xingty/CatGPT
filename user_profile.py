@@ -16,7 +16,9 @@ class UserProfile:
         self.presets = {}
         self.storage = storage
 
-    def _init_context(self, path: Path):
+        self._init_context()
+
+    def _init_context(self):
         file = Path(__file__).parent.joinpath('presets.json')
         presets: [] = json.loads(file.read_text())
         for preset in presets:
@@ -61,6 +63,10 @@ class UserProfile:
 
         await self.storage.update_model(uid, model)
 
+    async def update_prompt(self, uid: int, prompt: str):
+        assert uid > 0, 'invalid uid: ' + str(uid)
+        await self.storage.update_prompt(uid, prompt)
+
     async def get_conversation_id(self, uid: int, chat_type: str) -> int:
         return await self.storage.get_conversation_id(uid, chat_type)
 
@@ -82,3 +88,6 @@ class UserProfile:
             channel=0,
             groups=0
         )
+
+    async def get_prompt(self, prompt) -> str:
+        return self.presets.get(prompt, "")

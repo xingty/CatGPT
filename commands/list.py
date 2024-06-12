@@ -1,5 +1,6 @@
 from telebot.async_telebot import AsyncTeleBot
 from telebot.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
+
 from utils.md2tgmd import escape
 from context import profiles, topic
 from utils.text import messages_to_segments
@@ -142,14 +143,18 @@ async def do_convo_change(bot: AsyncTeleBot, operation: str, msg_id: int, chat_i
     await bot.delete_message(chat_id=message.chat.id, message_id=message.message_id)
 
 
-def register(bot: AsyncTeleBot, decorator) -> None:
+def register(bot: AsyncTeleBot, decorator, action_provider):
     handler = decorator(handle_convo)
     bot.register_message_handler(handler, pass_bot=True, commands=[action['name']])
+
+    action_provider[action["name"]] = do_convo_change
+
+    return action
 
 
 action = {
     "name": 'list',
     "description": 'all topics',
-    "handler": do_convo_change,
-    "delete_after_invoke": False
+    "delete_after_invoke": False,
+    "order": 20
 }

@@ -2,6 +2,7 @@ from telebot.async_telebot import AsyncTeleBot
 from telebot.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
 
 from utils.md2tgmd import escape
+from utils.text import parse_message_id
 from context import profiles, config, get_bot_name
 
 SHORT_NAME = {
@@ -57,14 +58,15 @@ async def handle_models(message: Message, bot: AsyncTeleBot):
     )
 
 
-async def do_model_change(bot: AsyncTeleBot, operation: str, msg_id: int, chat_id: int, uid: int, message: Message):
+async def do_model_change(bot: AsyncTeleBot, operation: str, msg_id: str, chat_id: int, uid: int, message: Message):
     profile = await profiles.load(uid)
 
+    message_ids = parse_message_id(msg_id)
     endpoint = config.get_endpoint(profile.endpoint or "None")
     if endpoint is None:
         await bot.send_message(
             chat_id=chat_id,
-            reply_to_message_id=msg_id,
+            reply_to_message_id=message_ids[-1],
             parse_mode="MarkdownV2",
             text=escape(f'endpoint not found')
         )
@@ -73,7 +75,7 @@ async def do_model_change(bot: AsyncTeleBot, operation: str, msg_id: int, chat_i
     if operation not in (endpoint.models or []):
         await bot.send_message(
             chat_id=chat_id,
-            reply_to_message_id=msg_id,
+            reply_to_message_id=message_ids[-1],
             parse_mode="MarkdownV2",
             text=escape(f'current endpoint does not support the model `{operation}`')
         )
@@ -87,16 +89,21 @@ async def do_model_change(bot: AsyncTeleBot, operation: str, msg_id: int, chat_i
         parse_mode="MarkdownV2",
         text=escape(f'current model: `{operation}`')
     )
+    message_ids.append(message.message_id)
+    await bot.delete_messages(chat_id, message_ids)
 
 
-def register(bot: AsyncTeleBot, decorator) -> None:
+def register(bot: AsyncTeleBot, decorator, action_provider):
     handler = decorator(handle_models)
     bot.register_message_handler(handler, pass_bot=True, commands=[action['name']])
+
+    action_provider[action["name"]] = do_model_change
+
+    return action
 
 
 action = {
     "name": 'models',
     "description": 'list models: [model_name]',
-    "handler": do_model_change,
-    "delete_after_invoke": True
+    "order": 60,
 }

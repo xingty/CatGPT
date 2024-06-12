@@ -50,7 +50,7 @@ async def create_convo(
         title: str = None
 ) -> None:
     profile = await profiles.load(uid)
-    prompt = get_prompt(profile)
+    prompt = get_prompt(profiles.get_prompt(profile.prompt))
     messages = [prompt] if prompt else None
     await create_topic_and_update_profile(
         chat_id=chat_id,
@@ -71,13 +71,15 @@ async def create_convo(
     )
 
 
-def register(bot: AsyncTeleBot, decorator) -> None:
+def register(bot: AsyncTeleBot, decorator, action_provider):
     handler = decorator(handle_new_topic)
     bot.register_message_handler(handler, pass_bot=True, commands=['new'])
+
+    return action
 
 
 action = {
     "name": 'new',
     "description": 'start a new topic: [title]',
-    # "handler": do_create_topic,
+    "order": 10
 }

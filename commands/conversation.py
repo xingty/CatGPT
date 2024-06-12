@@ -4,6 +4,7 @@ from telebot.async_telebot import AsyncTeleBot
 from telebot.types import Message, InlineKeyboardButton, InlineKeyboardMarkup, InputFile
 
 from utils.md2tgmd import escape
+from utils.text import parse_message_id
 from context import profiles, config, topic, get_bot_name
 from utils.text import messages_to_segments
 from . import show_conversation, share
@@ -48,7 +49,7 @@ async def handle_conversation(message: Message, bot: AsyncTeleBot):
         return
 
     if instruction == "share":
-        await do_share(convo, bot, message)
+        await _do_share(convo, bot, message)
     elif instruction == "download":
         await send_file(bot, message, convo)
     else:
@@ -64,65 +65,83 @@ async def handle_conversation(message: Message, bot: AsyncTeleBot):
         )
 
 
-async def handle_share_convo(
+async def handle_download(
         bot: AsyncTeleBot,
         operation: str,
-        msg_id: int,
+        msg_id: str,
         chat_id: int,
         uid: str,
         message: Message
 ):
-    segments = operation.split('_')
-    real_op = segments[0]
-    print("=" * 30)
+    convo = await topic.get_topic(int(operation), fetch_messages=True)
+    await send_file(bot, message, convo)
+    await bot.delete_messages(message.chat.id, [int(msg_id), message.message_id])
 
-    if real_op == "no":
-        await bot.delete_message(message.chat.id, message.message_id)
-        return
 
-    convo_id = segments[1]
-    convo = await topic.get_topic(int(convo_id), fetch_messages=True)
+async def handle_share(
+        bot: AsyncTeleBot,
+        operation: str,
+        msg_id: str,
+        chat_id: int,
+        uid: str,
+        message: Message
+):
+    convo = await topic.get_topic(int(operation))
+    message_id = int(msg_id)
     if convo is None:
         await bot.send_message(
             chat_id=chat_id,
-            reply_to_message_id=msg_id,
+            reply_to_message_id=message_id,
             parse_mode="MarkdownV2",
             text=escape(f'topic not found')
         )
         return
 
-    if real_op == "share":
-        if not config.share_info:
-            await bot.send_message(
-                chat_id=chat_id,
-                reply_to_message_id=msg_id,
-                parse_mode="MarkdownV2",
-                text=escape(f"Please set share info in config")
-            )
-            return
-
-        context = f'{message.message_id}:{message.chat.id}:{uid}'
-        buttons = [[
-            InlineKeyboardButton("yes", callback_data=f'{action["name"]}:yes_{convo_id}:{context}'),
-            InlineKeyboardButton("no", callback_data=f'{action["name"]}:no_{convo_id}:{context}'),
-        ]]
-
+    if not config.share_info:
         await bot.send_message(
             chat_id=chat_id,
-            reply_to_message_id=msg_id,
+            reply_to_message_id=message_id,
             parse_mode="MarkdownV2",
-            text=escape(f"Share this topic `<{convo.title}>` to github?"),
-            reply_markup=InlineKeyboardMarkup(buttons)
+            text=escape(f"Please set share info in config")
         )
-    elif real_op == "dl":
-        await send_file(bot, message, convo)
-        await bot.delete_message(message.chat.id, message.message_id)
-    elif real_op == "yes":
-        await do_share(convo, bot, message)
-        await bot.delete_message(message.chat.id, message.message_id)
+        return
+
+    message_id_offset = message.message_id - message_id
+    context = f'{msg_id},{message_id_offset}:{message.chat.id}:{uid}'
+    buttons = [[
+        InlineKeyboardButton("yes", callback_data=f'do_share:yes_{operation}:{context}'),
+        InlineKeyboardButton("no", callback_data=f'do_share:no:{context}'),
+    ]]
+
+    await bot.send_message(
+        chat_id=chat_id,
+        reply_to_message_id=message_id,
+        parse_mode="MarkdownV2",
+        text=escape(f"Share this topic `<{convo.title}>` to github?"),
+        reply_markup=InlineKeyboardMarkup(buttons)
+    )
 
 
-async def do_share(convo: types.Topic, bot: AsyncTeleBot, message: Message):
+async def do_share(
+        bot: AsyncTeleBot,
+        operation: str,
+        msg_id: str,
+        chat_id: int,
+        uid: str,
+        message: Message
+):
+    if operation == "no":
+        await bot.delete_message(chat_id, message.message_id)
+    else:
+        convo_id = int(operation.split("_")[1])
+        convo = await topic.get_topic(convo_id, fetch_messages=True)
+        message_ids = parse_message_id(msg_id)
+        message_ids.append(message.message_id)
+        await _do_share(convo, bot, message)
+        await bot.delete_messages(chat_id, message_ids)
+
+
+async def _do_share(convo: types.Topic, bot: AsyncTeleBot, message: Message):
     html_url = await share(convo)
     try:
         await bot.send_message(
@@ -140,14 +159,20 @@ async def do_share(convo: types.Topic, bot: AsyncTeleBot, message: Message):
         )
 
 
-def register(bot: AsyncTeleBot, decorator) -> None:
+def register(bot: AsyncTeleBot, decorator, action_provider):
     handler = decorator(handle_conversation)
     bot.register_message_handler(handler, pass_bot=True, commands=[action['name']])
+
+    action_provider["share"] = handle_share
+    action_provider["download"] = handle_download
+    action_provider["do_share"] = do_share
+
+    return action
 
 
 action = {
     "name": "topic",
     "description": "current topic: [title]",
-    "handler": handle_share_convo,
-    "delete_after_invoke": False
+    "delete_after_invoke": False,
+    "order": 30,
 }

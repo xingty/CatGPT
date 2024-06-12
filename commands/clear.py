@@ -33,9 +33,10 @@ async def handle_clear(message: Message, bot: AsyncTeleBot) -> None:
     )
 
 
-async def do_clear(bot: AsyncTeleBot, operation: str, msg_id: int, chat_id: int, uid: int, message: Message) -> None:
+async def do_clear(bot: AsyncTeleBot, operation: str, msg_id: str, chat_id: int, uid: int, message: Message) -> None:
+    message_id = int(msg_id)
     if operation == "no":
-        await bot.delete_message(chat_id, msg_id)
+        await bot.delete_messages(chat_id, [message_id, message.message_id])
         return
 
     profile = await profiles.load(uid)
@@ -45,16 +46,16 @@ async def do_clear(bot: AsyncTeleBot, operation: str, msg_id: int, chat_id: int,
         return
 
     message_ids = [msg.message_id for msg in convo.messages if msg.role != "system"]
-    prompt = get_prompt(profile)
+    prompt = get_prompt(profiles.get_prompt(profile.prompt))
     await topic.clear_topic(convo, prompt)
 
     await bot.send_message(
         chat_id=chat_id,
         text=escape("`Context cleared.`"),
-        reply_to_message_id=msg_id,
+        reply_to_message_id=message_id,
         parse_mode="MarkdownV2"
     )
-    await bot.delete_message(chat_id, msg_id)
+    await bot.delete_messages(chat_id, [message_id, message.message_id])
 
     if len(message_ids) > 0 and operation == "all":
         try:
@@ -63,14 +64,18 @@ async def do_clear(bot: AsyncTeleBot, operation: str, msg_id: int, chat_id: int,
             print(e)
 
 
-def register(bot: AsyncTeleBot, decorator) -> None:
+def register(bot: AsyncTeleBot, decorator, action_provider):
     handler = decorator(handle_clear)
     bot.register_message_handler(handler, pass_bot=True, commands=['clear'])
+
+    action_provider[action["name"]] = do_clear
+
+    return action
 
 
 action = {
     "name": 'clear',
     "description": 'clear context: [history|all]',
-    "handler": do_clear,
+    "order": 80
 }
 

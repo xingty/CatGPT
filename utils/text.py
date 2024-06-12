@@ -52,3 +52,14 @@ def get_timeout_from_text(text: str) -> int:
         return int(text[index + 1:])
     except ValueError:
         return -1
+
+
+def parse_message_id(message_ids: str) -> list[int]:
+    ids = message_ids.split(",")
+    message_id = int(ids[0])
+    real_message_ids = [message_id]
+
+    for i in range(1, len(ids)):
+        real_message_ids.append(int(ids[i]) + message_id)
+
+    return real_message_ids

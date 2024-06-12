@@ -32,7 +32,8 @@ async def handle_profiles(message: Message, bot: AsyncTeleBot):
 
 
 async def do_profile_change(bot: AsyncTeleBot, operation: str, msg_id: int, chat_id: int, uid: int, message: Message):
-    profile = await profiles.update_preset(uid, operation)
+    await profiles.update_prompt(uid, operation)
+    profile = await profiles.load(uid)
     text = await get_profile_text(profile, message.chat.type)
 
     await bot.send_message(
@@ -43,14 +44,17 @@ async def do_profile_change(bot: AsyncTeleBot, operation: str, msg_id: int, chat
     )
 
 
-def register(bot: AsyncTeleBot, decorator) -> None:
+def register(bot: AsyncTeleBot, decorator, action_provider):
     handler = decorator(handle_profiles)
     bot.register_message_handler(handler, pass_bot=True, commands=['profile'])
+
+    action_provider[action["name"]] = do_profile_change
+
+    return action
 
 
 action = {
     "name": 'profile',
     "description": 'show presets',
-    "handler": do_profile_change,
-    "delete_after_invoke": False
+    "order": 40,
 }

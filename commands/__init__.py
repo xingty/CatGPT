@@ -55,21 +55,20 @@ def permission_check(func):
 
 
 async def register_commands(bot: AsyncTeleBot) -> None:
-    bot_commands = []
+    list_module_info = []
     action_provider = {}
 
     # import all submodules
-    for name in all_commands():
+    for name in all_modules():
         module = importlib.import_module(f".{name}", __package__)
 
         if hasattr(module, "register"):
-            module.register(bot, permission_check)
+            module_info = module.register(bot, permission_check, action_provider)
+            if module_info:
+                list_module_info.append(module_info)
 
-        if hasattr(module, "action"):
-            module_info = getattr(module, "action")
-            bot_commands.append(BotCommand(module_info["name"], module_info["description"]))
-            if "handler" in module_info:
-                action_provider[module_info["name"]] = module_info
+    sorted_list = sorted(list_module_info, key=lambda x: x.get("order", 1000))
+    bot_commands = [BotCommand(x["name"], x["description"]) for x in sorted_list]
     await bot.set_my_commands(bot_commands)
 
     @bot.callback_query_handler(func=lambda call: True)
@@ -79,30 +78,31 @@ async def register_commands(bot: AsyncTeleBot) -> None:
         uid = call.from_user.id
         target = segments[0]
         operation = segments[1]
-        message_id = int(segments[2])
+        message_ids = segments[2]
+        # message_id = int(segments[2])
         chat_id = int(segments[3])
         source_uid = int(segments[4])
 
         if call.from_user.id != source_uid:
             return
-        provider = action_provider.get(target)
-        if provider is not None:
-            handler = provider["handler"]
+        handler = action_provider.get(target)
+        if handler is not None:
+            # handler = provider["handler"]
             await handler(
                 bot=bot,
                 operation=operation,
-                msg_id=message_id,
+                msg_id=message_ids,
                 chat_id=chat_id,
                 uid=uid,
                 message=message,
             )
 
-            delete = provider.get("delete_after_invoke", True)
-            if delete:
-                await bot.delete_message(message.chat.id, message.message_id)
+            # delete = provider.get("delete_after_invoke", True)
+            # if delete:
+            #     await bot.delete_message(message.chat.id, message.message_id)
 
 
-def all_commands() -> list[str]:
+def all_modules() -> list[str]:
     commands = []
     this_path = Path(__file__).parent
     for child in this_path.iterdir():
@@ -133,8 +133,8 @@ async def show_conversation(
     last_message_id = reply_msg_id
     context = f'{msg_id}:{chat_id}:{uid}'
     keyboard = [[
-        InlineKeyboardButton("Share", callback_data=f'topic:share_{convo.tid}:{context}'),
-        InlineKeyboardButton("Download", callback_data=f'topic:dl_{convo.tid}:{context}')
+        InlineKeyboardButton("Share", callback_data=f'share:{convo.tid}:{context}'),
+        InlineKeyboardButton("Download", callback_data=f'download:{convo.tid}:{context}')
     ]]
     for content in segments:
         reply_msg: Message = await bot.send_message(
@@ -155,7 +155,7 @@ async def create_convo_and_update_profile(
         chat_type: str,
         title: str = None
 ) -> types.Topic:
-    prompt = get_prompt(profile)
+    prompt = get_prompt(profiles.get_prompt(profile.prompt))
     messages = [prompt] if prompt else None
 
     convo = await topic.new_topic(

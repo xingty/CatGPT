@@ -2,6 +2,7 @@ from telebot.async_telebot import AsyncTeleBot
 from telebot.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
 
 from utils.md2tgmd import escape
+from utils.text import parse_message_id
 from context import profiles, config, get_bot_name
 from context import Endpoint
 
@@ -42,12 +43,13 @@ async def handle_endpoints(message: Message, bot: AsyncTeleBot):
     )
 
 
-async def do_endpoint_change(bot: AsyncTeleBot, operation: str, msg_id: int, chat_id: int, uid: int, message: Message):
+async def do_endpoint_change(bot: AsyncTeleBot, operation: str, msg_id: str, chat_id: int, uid: int, message: Message):
+    message_ids = parse_message_id(msg_id)
     endpoint: Endpoint = config.get_endpoint(operation)
     if endpoint is None:
         await bot.send_message(
             chat_id=chat_id,
-            reply_to_message_id=msg_id,
+            reply_to_message_id=message_ids[-1],
             parse_mode="MarkdownV2",
             text=escape(f'endpoint not found')
         )
@@ -63,20 +65,26 @@ async def do_endpoint_change(bot: AsyncTeleBot, operation: str, msg_id: int, cha
 
     await bot.send_message(
         chat_id=chat_id,
-        reply_to_message_id=msg_id,
+        reply_to_message_id=message_ids[-1],
         parse_mode="MarkdownV2",
         text=escape(f'current endpoint: `{operation}`')
     )
+    message_ids.append(message.message_id)
+    await bot.delete_messages(chat_id, message_ids)
 
 
-def register(bot: AsyncTeleBot, decorator) -> None:
+def register(bot: AsyncTeleBot, decorator, action_provider):
     handler = decorator(handle_endpoints)
     bot.register_message_handler(handler, pass_bot=True, commands=[action['name']])
+
+    action_provider[action["name"]] = do_endpoint_change
+
+    return action
 
 
 action = {
     "name": 'endpoints',
     "description": 'list endpoints: [endpoint_name]',
-    "handler": do_endpoint_change,
-    "delete_after_invoke": True
+    "delete_after_invoke": True,
+    "order": 50,
 }

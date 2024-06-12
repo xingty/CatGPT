@@ -215,6 +215,6 @@ def message_check(func):
     return wrapper
 
 
-def register(bot: AsyncTeleBot, decorator) -> None:
+def register(bot: AsyncTeleBot, decorator, provider) -> None:
     handler = message_check(decorator(handle_message))
     bot.register_message_handler(handler, regexp=r"^(?!/)", pass_bot=True, content_types=["text"])
