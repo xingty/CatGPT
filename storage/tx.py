@@ -1,5 +1,5 @@
 import enum
-import abc
+import os
 
 from contextvars import ContextVar
 
@@ -28,7 +28,8 @@ class Transactional:
 class Transaction:
     def __init__(self, connection, tx_type="read"):
         self.connection = connection
-        connection.set_trace_callback(print)
+        if os.getenv("debug"):
+            connection.set_trace_callback(print)
         self.tx_type = tx_type
         self.state = TxState.Init
 
