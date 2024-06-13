@@ -2,7 +2,6 @@ from telebot.async_telebot import AsyncTeleBot
 from telebot.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
 
 from utils.md2tgmd import escape
-from utils.text import parse_message_id
 from context import profiles, config, get_bot_name
 
 SHORT_NAME = {
@@ -59,13 +58,13 @@ async def handle_models(message: Message, bot: AsyncTeleBot):
     )
 
 
-async def do_model_change(bot: AsyncTeleBot, operation: str, msg_id: str, chat_id: int, uid: int, message: Message):
+async def do_model_change(bot: AsyncTeleBot, operation: str, msg_ids: list[int], chat_id: int, uid: int, message: Message):
     if operation == "dismiss":
-        await bot.delete_messages(chat_id, [message.message_id, msg_id])
+        await bot.delete_messages(chat_id, [message.message_id, msg_ids[0]])
         return
 
     profile = await profiles.load(uid)
-    message_id = int(msg_id)
+    message_id = msg_ids[0]
     endpoint = config.get_endpoint(profile.endpoint or "None")
     if endpoint is None:
         await bot.send_message(

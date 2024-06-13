@@ -1,6 +1,5 @@
 from storage import types
 
-
 MAX_TEXT_LENGTH = 4096
 
 
@@ -54,8 +53,8 @@ def get_timeout_from_text(text: str) -> int:
         return -1
 
 
-def parse_message_id(message_ids: str) -> list[int]:
-    ids = message_ids.split(",")
+def decode_message_id(msg_id_str: str) -> list[int]:
+    ids = msg_id_str.split(",")
     message_id = int(ids[0])
     real_message_ids = [message_id]
 
@@ -63,3 +62,15 @@ def parse_message_id(message_ids: str) -> list[int]:
         real_message_ids.append(int(ids[i]) + message_id)
 
     return real_message_ids
+
+
+def encode_message_id(message_ids: list[int]) -> str:
+    assert len(message_ids) > 0, "message ids cannot be empty"
+
+    first_id = message_ids[0]
+    encoded_message_ids = str(first_id)
+    for i in range(1, len(message_ids)):
+        offset = message_ids[i] - first_id
+        encoded_message_ids = encoded_message_ids + "," + str(offset)
+
+    return encoded_message_ids

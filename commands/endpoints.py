@@ -2,7 +2,6 @@ from telebot.async_telebot import AsyncTeleBot
 from telebot.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
 
 from utils.md2tgmd import escape
-from utils.text import parse_message_id
 from context import profiles, config, get_bot_name
 from context import Endpoint
 
@@ -15,7 +14,7 @@ async def handle_endpoints(message: Message, bot: AsyncTeleBot):
     if len(endpoint_name) > 0:
         endpoint = config.get_endpoint(endpoint_name)
         if endpoint is not None:
-            await do_endpoint_change(bot, endpoint_name, message.message_id, message.chat.id, uid, message)
+            await do_endpoint_change(bot, endpoint_name, [message.message_id], message.chat.id, uid, message)
             return
 
     profile = await profiles.load(uid)
@@ -44,8 +43,8 @@ async def handle_endpoints(message: Message, bot: AsyncTeleBot):
     )
 
 
-async def do_endpoint_change(bot: AsyncTeleBot, operation: str, msg_id: str, chat_id: int, uid: int, message: Message):
-    message_id = int(msg_id)
+async def do_endpoint_change(bot: AsyncTeleBot, operation: str, msg_ids: list[int], chat_id: int, uid: int, message: Message):
+    message_id = msg_ids[0]
     if operation == "dismiss":
         await bot.delete_messages(chat_id, [message_id, message.message_id])
         return

@@ -58,8 +58,8 @@ async def handle_revoke(message: Message, bot: AsyncTeleBot):
     )
 
 
-async def do_revoke(bot: AsyncTeleBot, operation: str, msg_id: str, chat_id: int, uid: int, message: Message):
-    message_id = int(msg_id)
+async def do_revoke(bot: AsyncTeleBot, operation: str, msg_ids: list[int], chat_id: int, uid: int, message: Message):
+    message_id = msg_ids[0]
     if operation != 'yes':
         await bot.delete_messages(chat_id, [message_id, message.message_id])
         return

@@ -2,10 +2,10 @@ from telebot.async_telebot import AsyncTeleBot
 from telebot.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
 
 from utils.md2tgmd import escape
-from utils.text import parse_message_id
+from utils.text import encode_message_id
 from context import profiles, topic
 from utils.text import messages_to_segments, MAX_TEXT_LENGTH
-from . import share
+from . import share, send_file
 
 
 async def show_conversation_list(
@@ -59,12 +59,11 @@ async def handle_convo(message: Message, bot: AsyncTeleBot):
     await show_conversation_list(uid, message.message_id, message.chat.id, bot, message.chat.type)
 
 
-async def do_convo_change(bot: AsyncTeleBot, operation: str, msg_id: str, chat_id: int, uid: int, message: Message):
+async def do_convo_change(bot: AsyncTeleBot, operation: str, msg_ids: list[int], chat_id: int, uid: int, message: Message):
     segs = operation.split('_')
     real_op = segs[0]
     conversation_id = int(segs[1])
 
-    message_ids = parse_message_id(msg_id)
     convo = await topic.get_topic(conversation_id, fetch_messages=True)
     if convo is None:
         await bot.send_message(
@@ -80,7 +79,6 @@ async def do_convo_change(bot: AsyncTeleBot, operation: str, msg_id: str, chat_i
             chat_id=chat_id,
             parse_mode="MarkdownV2",
             text=escape(f"Switched to topic `{convo.title}`"),
-            reply_to_message_id=message_ids[0]
         )
     elif real_op == "sr":  # share this conversation to a share provider
         html_url = await share(convo)
@@ -90,21 +88,17 @@ async def do_convo_change(bot: AsyncTeleBot, operation: str, msg_id: str, chat_i
             text=escape(f"Share link: {html_url}"),
             disable_web_page_preview=False
         )
+    elif real_op == "dl":
+        await send_file(bot, message, convo)
     elif real_op == "d":  # delete this conversation
         await topic.remove_topic(conversation_id)
-        # message_ids = [msg.message_id for msg in convo.messages if msg.role != "system"]
-        # try:
-        #     if len(message_ids) > 0:
-        #         await bot.delete_messages(chat_id=chat_id, message_ids=message_ids)
-        # except Exception as e:
-        #     print(e)
         await show_conversation_list(
             uid=uid,
-            msg_id=message_ids[0],
+            msg_id=msg_ids[0],
             chat_id=chat_id,
             bot=bot,
             chat_type=message.chat.type,
-            edit_msg_id=message_ids[1]
+            edit_msg_id=msg_ids[1]
         )
 
     elif real_op == "c":  # cancel
@@ -116,32 +110,38 @@ async def do_convo_change(bot: AsyncTeleBot, operation: str, msg_id: str, chat_i
 async def do_handle_tips(
         bot: AsyncTeleBot,
         operation: str,
-        msg_id: str,
+        msg_ids: list[int],
         chat_id: int,
         uid: int,
         message: Message
 ):
     if operation == "dismiss":
-        await bot.delete_messages(chat_id, [message.message_id, int(msg_id)])
+        await bot.delete_messages(chat_id, [message.message_id, msg_ids[0]])
         return
 
     conversation_id = int(operation)
     convo = await topic.get_topic(conversation_id, fetch_messages=True)
-    message_id = int(msg_id)
-    offset = message.message_id - message_id
+    my_message_ids = msg_ids + [message.message_id]
+    encoded_ids = encode_message_id(my_message_ids)
 
-    context = f'{message_id},{offset}:{message.chat.id}:{uid}'
+    context = f'{encoded_ids}:{message.chat.id}:{uid}'
     op_switch = f"s_{conversation_id}"
     op_share = f"sr_{conversation_id}"
+    op_dl = f"dl_{conversation_id}"
     op_delete = f"d_{conversation_id}"
     op_cancel = f"c_{conversation_id}"
 
-    buttons = [[
-        InlineKeyboardButton("switch", callback_data=f'{action["name"]}:{op_switch}:{context}'),
-        InlineKeyboardButton("share", callback_data=f'{action["name"]}:{op_share}:{context}'),
-        InlineKeyboardButton("delete", callback_data=f'{action["name"]}:{op_delete}:{context}'),
-        InlineKeyboardButton("dismiss", callback_data=f'{action["name"]}:{op_cancel}:{context}'),
-    ]]
+    buttons = [
+        [
+            InlineKeyboardButton("switch", callback_data=f'{action["name"]}:{op_switch}:{context}'),
+            InlineKeyboardButton("share", callback_data=f'{action["name"]}:{op_share}:{context}'),
+            InlineKeyboardButton("download", callback_data=f'{action["name"]}:{op_dl}:{context}'),
+            InlineKeyboardButton("delete", callback_data=f'{action["name"]}:{op_delete}:{context}'),
+        ],
+        [
+            InlineKeyboardButton("dismiss", callback_data=f'{action["name"]}:{op_cancel}:{context}')
+        ]
+    ]
     messages = convo.messages
     fragments = []
     if len(messages) >= 2:

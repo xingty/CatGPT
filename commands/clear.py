@@ -13,14 +13,14 @@ async def handle_clear(message: Message, bot: AsyncTeleBot) -> None:
     text = message.text.replace("/clear", "").replace(bot_name, "").strip()
     if len(text) > 0 and text in DELETE_INSTRUCTIONS:
         uid = message.from_user.id
-        await do_clear(bot, text, str(message.message_id), message.chat.id, uid, message)
+        await do_clear(bot, text, [message.message_id], message.chat.id, uid, message)
         return
 
     context = f'{message.message_id}:{message.chat.id}:{message.from_user.id}'
     keyboard = [
         [
-            InlineKeyboardButton("delete", callback_data=f'{action["name"]}:yes:{context}'),
-            InlineKeyboardButton("delete all", callback_data=f'{action["name"]}:all:{context}'),
+            InlineKeyboardButton("clear", callback_data=f'{action["name"]}:yes:{context}'),
+            InlineKeyboardButton("delete", callback_data=f'{action["name"]}:all:{context}'),
             InlineKeyboardButton("dismiss", callback_data=f'{action["name"]}:no:{context}'),
         ],
     ]
@@ -33,8 +33,8 @@ async def handle_clear(message: Message, bot: AsyncTeleBot) -> None:
     )
 
 
-async def do_clear(bot: AsyncTeleBot, operation: str, msg_id: str, chat_id: int, uid: int, message: Message) -> None:
-    message_id = int(msg_id)
+async def do_clear(bot: AsyncTeleBot, operation: str, msg_id: list[int], chat_id: int, uid: int, message: Message) -> None:
+    message_id = msg_id[0]
     if operation == "no":
         await bot.delete_messages(chat_id, [message_id, message.message_id])
         return

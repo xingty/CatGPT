@@ -32,8 +32,8 @@ async def handle_profiles(message: Message, bot: AsyncTeleBot):
     )
 
 
-async def do_profile_change(bot: AsyncTeleBot, operation: str, msg_id: str, chat_id: int, uid: int, message: Message):
-    message_id = int(msg_id)
+async def do_profile_change(bot: AsyncTeleBot, operation: str, msg_ids: list[int], chat_id: int, uid: int, message: Message):
+    message_id = msg_ids[0]
     if operation == "dismiss":
         await bot.delete_messages(chat_id, [message_id, message.message_id])
         return

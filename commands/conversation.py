@@ -1,28 +1,15 @@
-from io import BytesIO
-
 from telebot.async_telebot import AsyncTeleBot
 from telebot.types import Message, InlineKeyboardButton, InlineKeyboardMarkup, InputFile
 
 from utils.md2tgmd import escape
-from utils.text import parse_message_id
+from utils.text import encode_message_id
 from context import profiles, config, topic, get_bot_name
 from utils.text import messages_to_segments
 from . import show_conversation, share
 from storage import types
 
 
-async def send_file(bot: AsyncTeleBot, message: Message, convo: types.Topic):
-    messages: list[types.Message] = convo.messages or []
-    messages = [msg for msg in messages if (msg.role != "system" and msg.chat_id == message.chat.id)]
-    segment = messages_to_segments(messages, 65536)[0]
-    file_object = BytesIO(segment.encode("utf-8"))
-    file_object.name = f"{convo.title}.md"
-    file = InputFile(file_object)
-    file.file_name = f"{convo.title}.md"
-    await bot.send_document(
-        chat_id=message.chat.id,
-        document=file,
-    )
+
 
 
 async def handle_conversation(message: Message, bot: AsyncTeleBot):
@@ -68,26 +55,26 @@ async def handle_conversation(message: Message, bot: AsyncTeleBot):
 async def handle_download(
         bot: AsyncTeleBot,
         operation: str,
-        msg_id: str,
+        msg_ids: list[int],
         chat_id: int,
         uid: str,
         message: Message
 ):
     convo = await topic.get_topic(int(operation), fetch_messages=True)
     await send_file(bot, message, convo)
-    await bot.delete_messages(message.chat.id, [int(msg_id), message.message_id])
+    await bot.delete_messages(message.chat.id, msg_ids + [message.message_id])
 
 
 async def handle_share(
         bot: AsyncTeleBot,
         operation: str,
-        msg_id: str,
+        msg_ids: list[int],
         chat_id: int,
         uid: str,
         message: Message
 ):
     convo = await topic.get_topic(int(operation))
-    message_id = int(msg_id)
+    message_id = msg_ids[0]
     if convo is None:
         await bot.send_message(
             chat_id=chat_id,
@@ -106,8 +93,8 @@ async def handle_share(
         )
         return
 
-    message_id_offset = message.message_id - message_id
-    context = f'{msg_id},{message_id_offset}:{message.chat.id}:{uid}'
+    encoded_msg_id = encode_message_id(msg_ids + [message.message_id])
+    context = f'{encoded_msg_id}:{message.chat.id}:{uid}'
     buttons = [[
         InlineKeyboardButton("yes", callback_data=f'do_share:yes_{operation}:{context}'),
         InlineKeyboardButton("no", callback_data=f'do_share:no:{context}'),
@@ -125,7 +112,7 @@ async def handle_share(
 async def do_share(
         bot: AsyncTeleBot,
         operation: str,
-        msg_id: str,
+        msg_ids: list[int],
         chat_id: int,
         uid: str,
         message: Message
@@ -135,10 +122,8 @@ async def do_share(
     else:
         convo_id = int(operation.split("_")[1])
         convo = await topic.get_topic(convo_id, fetch_messages=True)
-        message_ids = parse_message_id(msg_id)
-        message_ids.append(message.message_id)
         await _do_share(convo, bot, message)
-        await bot.delete_messages(chat_id, message_ids)
+        await bot.delete_messages(chat_id, msg_ids + [message.message_id])
 
 
 async def _do_share(convo: types.Topic, bot: AsyncTeleBot, message: Message):
