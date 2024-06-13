@@ -1,15 +1,16 @@
 import asyncio
 import importlib
 from pathlib import Path
+from io import BytesIO
 
-from telebot.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
+from telebot.types import Message, InlineKeyboardButton, InlineKeyboardMarkup, InputFile
 from telebot.async_telebot import AsyncTeleBot
 from telebot.types import BotCommand
 from telebot.asyncio_helper import RequestTimeout
 
 from context import profiles, config, topic
 from utils.md2tgmd import escape
-from utils.text import messages_to_segments
+from utils.text import messages_to_segments, decode_message_id
 from utils.prompt import get_prompt
 from share.github import create_or_update_issue
 from storage import types
@@ -78,8 +79,7 @@ async def register_commands(bot: AsyncTeleBot) -> None:
         uid = call.from_user.id
         target = segments[0]
         operation = segments[1]
-        message_ids = segments[2]
-        # message_id = int(segments[2])
+        message_ids = decode_message_id(segments[2])
         chat_id = int(segments[3])
         source_uid = int(segments[4])
 
@@ -90,12 +90,11 @@ async def register_commands(bot: AsyncTeleBot) -> None:
             await handler(
                 bot=bot,
                 operation=operation,
-                msg_id=message_ids,
+                msg_ids=message_ids,
                 chat_id=chat_id,
                 uid=uid,
                 message=message,
             )
-
 
 
 def all_modules() -> list[str]:
@@ -193,4 +192,18 @@ async def share(convo: types.Topic):
         title=convo.title,
         label=convo.label,
         body=body,
+    )
+
+
+async def send_file(bot: AsyncTeleBot, message: Message, convo: types.Topic):
+    messages: list[types.Message] = convo.messages or []
+    messages = [msg for msg in messages if (msg.role != "system" and msg.chat_id == message.chat.id)]
+    segment = messages_to_segments(messages, 65536)[0]
+    file_object = BytesIO(segment.encode("utf-8"))
+    file_object.name = f"{convo.title}.md"
+    file = InputFile(file_object)
+    file.file_name = f"{convo.title}.md"
+    await bot.send_document(
+        chat_id=message.chat.id,
+        document=file,
     )
