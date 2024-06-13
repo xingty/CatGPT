@@ -4,7 +4,7 @@ from telebot.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
 from utils.md2tgmd import escape
 from utils.text import parse_message_id
 from context import profiles, topic
-from utils.text import messages_to_segments
+from utils.text import messages_to_segments, MAX_TEXT_LENGTH
 from . import share
 
 
@@ -152,11 +152,15 @@ async def do_handle_tips(
     if len(segments) > 0:
         summary = segments[0]
 
-    message_preview = f"**What would you like to do on the topic** `<{convo.title}>`?\n\n{summary}"
+    preview_message = f"**What would you like to do on the topic** `<{convo.title}>`?\n\n{summary}"
+    preview_message = escape(preview_message)
+    if len(preview_message) > MAX_TEXT_LENGTH:
+        preview_message = preview_message[:MAX_TEXT_LENGTH - 3] + "..."
+
     await bot.send_message(
         chat_id=chat_id,
         parse_mode="MarkdownV2",
-        text=escape(message_preview),
+        text=preview_message,
         reply_markup=InlineKeyboardMarkup(buttons)
     )
 

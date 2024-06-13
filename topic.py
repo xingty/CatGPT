@@ -71,6 +71,7 @@ class Topic:
 
         return topics
 
+    @tx.transactional(tx_type="write")
     async def create_topic(self, topic: types.Topic) -> types.Topic:
         topic.tid = await self.storage.create_topic(topic)
         if topic.messages:
