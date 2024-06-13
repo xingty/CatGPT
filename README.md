@@ -1,4 +1,6 @@
-CatGPT is a Telegram bot that integrates with OpenAI's api for users who like to use OpenAI in Telegram.
+# CatGPT 
+
+CatGPt is a Telegram bot that integrates with OpenAI's api for users who like to use OpenAI in Telegram.
 
 ### Features
 * Multiple topics
@@ -40,11 +42,11 @@ CatGPT is a Telegram bot that integrates with OpenAI's api for users who like to
 
   * share
 
-    Use `/topic share` to share current topic directly without a confirming operation
+    Use `/topic share` to share current topic directly without a confirmation operation
 
   * download
 
-    Use `/topic download` to download current directly without a confirming operation.
+    Use `/topic download` to download current directly without a confirmation operation.
 	  
   * other characters
 
