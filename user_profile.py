@@ -17,6 +17,7 @@ class UserProfile:
         self.storage = storage
 
         self._init_context()
+        self.memory = {}
 
     def _init_context(self):
         file = Path(__file__).parent.joinpath('presets.json')
@@ -75,8 +76,15 @@ class UserProfile:
         await self.storage.update_conversation_id(uid, chat_type, conversation_id)
 
     async def is_enrolled(self, uid: int) -> bool:
+        if uid in self.memory:
+            return True
+
         profile = await self.storage.get_profile(uid)
-        return profile is not None
+        if profile:
+            self.memory[uid] = True
+            return True
+
+        return False
 
     async def enroll(self, uid: int, model: str, endpoint: str):
         await self.create(
