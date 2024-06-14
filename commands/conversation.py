@@ -4,12 +4,8 @@ from telebot.types import Message, InlineKeyboardButton, InlineKeyboardMarkup, I
 from utils.md2tgmd import escape
 from utils.text import encode_message_id
 from context import profiles, config, topic, get_bot_name
-from utils.text import messages_to_segments
-from . import show_conversation, share
+from . import show_conversation, share, send_file
 from storage import types
-
-
-
 
 
 async def handle_conversation(message: Message, bot: AsyncTeleBot):
