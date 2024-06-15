@@ -4,6 +4,21 @@ import os
 
 from storage import Datasource, types, tx, Topic
 
+VERSION = [
+    {
+        "version": "0.1.1",
+        "version_code": 202401010501,
+        "sql_list": [
+            ""
+        ],
+    }
+]
+
+
+def migrate(connection):
+    # execute sql to migrate to the specified version
+    pass
+
 
 class ConnectionProxy:
     def __init__(self, connection, datasource):
@@ -120,12 +135,6 @@ class Sqlite3TopicStorage(types.TopicStorage, tx.Transactional):
         columns = (topic.label, topic.chat_id, topic.user_id, topic.title, topic.generate_title)
         cursor = t.connection.execute(sql, columns)
         topic_id = cursor.lastrowid
-
-        # if len(topic.messages) > 0:
-        #     for m in topic.messages:
-        #         m.topic_id = topic_id
-        #
-        #     await self.append_message(topic_id, topic.messages)
 
         return topic_id
 
