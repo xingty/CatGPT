@@ -36,56 +36,79 @@ CatGPt is a Telegram bot that integrates with OpenAI's api for users who like to
 
    For example, using `/new english learning` will create a topic with the title `english learning`. A default title will be used if you do not supply a specific title.
 
+   ![new topic](assets/new.png)
+
 * **/topic** `[share | download | title]`
 
   There are three optional operations that you can use to perform some task quickly.
 
-  * share
+  * `share`
 
-    Use `/topic share` to share current topic directly without a confirmation operation
+    Use `/topic share` to share the topic directly without a confirmation operation
 
-  * download
+  * `download`
 
-    Use `/topic download` to download current directly without a confirmation operation.
+    Use `/topic download` to download the topic directly without a confirmation operation.
 	  
-  * other characters
+  * **other characters**
 
     Any other characters will be treated as the title, and the topic's title will be updated."
 	
 
-​	if none of the operations is supplied, it will display the chat history of the current topic 
+​		![operations](assets/dl_share.png)
+
+​	if none of the operations is supplied, it displays the chat history.
+
+​		![operations](assets/topic.png)
 
 * **/profile**
 
-  Display user's profile (including current endpoint, model, and topic)
+  Display user's profile (including the current endpoint, model, and topic)
 
 * **/endpoints** `[endpoint name]`
 
-  Diaplay all endpoints.
+  Display all endpoints.
 
 ​	You can also swtich to an endpoint directly with the command `/endpoints [your endpoint name]`
 
 * **/models** `[model name]`
 
-  Display all the support models of current endpoint.
+  Display all the support models of the endpoint.
 
-  Use `/models [model name]` to switch to it directly. Otherwise, the list of models will be displayed in the current chat window.
+  Use `/models [model name]` to switch to it directly. Otherwise, the list of models will be displayed in the  chat window.
 
+  There are some short names that map to the full names of those models
+
+  ```json
+  {
+      "gpt4": "gpt-4",
+      "gpt4_32k": "gpt-4-32k",
+      "gpt4_16k": "gpt-4-16k",
+      "0314": "gpt-4-0314",
+      "0613": "gpt-4-0613",
+      "1106": "gpt-4-1106-preview",
+      "0125": "gpt-4-0125-preview",
+      "0409": "gpt-4-turbo-2024-04-09",
+      "gpt4o": "gpt-4o",
+    	"4o": "gpt-4o"
+  }
+	```
+	For example, you can use `/models 0409` to switch to the model `gpt-4-turbo-2024-04-09` directly.
+	
+	![](assets/model.png)
+	
+	It displays all the models if a invalid short name is provided.
+	
 * **/revoke**
 
-  The latest messages will be removed from the chat window and chat histories so that you can have another attempt.
+  Removes the latest messages from the chat window and chat histories so that you can have another attempt.
 
 * **/clear** `[history | all]`
 
-  Clear all the messages of the current topic
+  Clears all the messages of the topic
   
-  * history
-  
-    Only clear the chat history of the current topic. Messages are remained in the current chat window.
-  
-  * all
-  
-    Both chat history and messages will be deleted.
+  * `history`: Only clear the chat history, messages are remained in the chat window.
+  * `all`: Clears both chat history and messages.
 
 
 
@@ -97,7 +120,7 @@ CatGPt is a Telegram bot that integrates with OpenAI's api for users who like to
 
 * `proxy`: a http or https proxy server. the chatbot will run behind the proxy server if it's supplied
 
-* endpoinds: your endpoints
+* `endpoinds`: your endpoints
 
   endpint:
 
@@ -107,7 +130,7 @@ CatGPt is a Telegram bot that integrates with OpenAI's api for users who like to
   * `models`: list of supporting models for this endpoint
   * `generate_title`: If `true`, the endpoint will be used to automatically generate titles for topics that lack one, based on their chat history."
 
-* share
+* `share`: a share provider(only supports github c)
 
 ```json
 {
