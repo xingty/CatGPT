@@ -21,3 +21,6 @@ build-backend = "pdm.backend"
 
 [tool.pdm]
 distribution = true
+
+[project.scripts]
+cat-gpt = "catgpt.main:launch"

@@ -2,13 +2,13 @@ from telebot.async_telebot import AsyncTeleBot
 from telebot.asyncio_helper import ApiTelegramException
 from telebot.types import Message
 
-from context import profiles, config, get_bot_name, topic
-from context import Endpoint
-from utils.text import get_timeout_from_text, MAX_TEXT_LENGTH
+from ..context import profiles, config, get_bot_name, topic
+from ..context import Endpoint
+from ..utils.text import get_timeout_from_text, MAX_TEXT_LENGTH
 from . import create_convo_and_update_profile
-from ask import ask_stream, ask
-from utils.md2tgmd import escape
-from storage import types
+from ..ask import ask_stream, ask
+from ..utils.md2tgmd import escape
+from ..storage import types
 
 import time
 import asyncio
@@ -65,13 +65,11 @@ async def handle_message(message: Message, bot: AsyncTeleBot) -> None:
         )
         return
 
-    # messages = convo.messages
     messages_payload = [{"role": m.role, "content": m.content} for m in convo.messages]
     messages_payload.append({
         "role": "user",
         "content": message_text
     })
-    print(messages_payload)
     model = profile.model
     if model not in endpoint.models:
         model = endpoint.default_model

@@ -2,7 +2,7 @@ import json
 
 from pathlib import Path
 
-from storage import types
+from .storage import types
 
 DEFAULT_PROFILE = {
     "prompt": "You are ChatGPT, a large language model trained by OpenAI.\nLatex inline: $x^2$\nLatex block: $$e=mc^2$$",
@@ -20,7 +20,7 @@ class UserProfile:
         self.memory = {}
 
     def _init_context(self):
-        file = Path(__file__).parent.joinpath('presets.json')
+        file = Path("presets.json")
         presets: [] = json.loads(file.read_text())
         for preset in presets:
             self.presets[preset['role']] = preset

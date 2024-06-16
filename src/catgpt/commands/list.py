@@ -1,10 +1,10 @@
 from telebot.async_telebot import AsyncTeleBot
 from telebot.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
 
-from utils.md2tgmd import escape
-from utils.text import encode_message_id
-from context import profiles, topic
-from utils.text import messages_to_segments, MAX_TEXT_LENGTH
+from ..utils.md2tgmd import escape
+from ..utils.text import encode_message_id
+from ..context import profiles, topic
+from ..utils.text import messages_to_segments, MAX_TEXT_LENGTH
 from . import share, send_file
 
 

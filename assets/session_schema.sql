@@ -8,7 +8,8 @@ create table topic
     chat_id         INTEGER,
     user_id         INTEGER,
     title           TEXT,
-    generate_title  INTEGER
+    generate_title  INTEGER,
+    unique (label)
 );
 
 create index idx_t_topic_id on topic (tid);

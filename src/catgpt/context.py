@@ -1,9 +1,8 @@
 from telebot.async_telebot import AsyncTeleBot, asyncio_helper
 
-from user_profile import UserProfile
-from topic import Topic
-import storage
-
+from .user_profile import UserProfile
+from .topic import Topic
+from . import storage
 
 import json
 import random
@@ -130,7 +129,7 @@ async def init_configuration(options):
 async def init_datasource(options):
     global topic
     global profiles
-    from storage.sqlite3_session_storage import Sqlite3Datasource, Sqlite3TopicStorage, Sqlite3ProfileStorage
+    from .storage.sqlite3_session_storage import Sqlite3Datasource, Sqlite3TopicStorage, Sqlite3ProfileStorage
 
     datasource = Sqlite3Datasource("data.db")
     storage.datasource = datasource
@@ -140,47 +139,6 @@ async def init_datasource(options):
     profile_storage = Sqlite3ProfileStorage()
     profiles = UserProfile(profile_storage)
 
-    # topic_storage = Sqlite3TopicStorage()
-    # t = Topic(topic_storage)
-    #
-    # record = types.Topic(
-    #     tid=1,
-    #     user_id=3,
-    #     chat_id=1,
-    #     title="test",
-    #     generate_title=True,
-    #     label="1233211234567",
-    # )
-    #
-    # await topic_storage.create_topic(record)
-    #
-    # await t.append_message(1,[])
-    # convo = await topic_storage.get_topic(1)
-    # print(convo)
-    # messages = [
-    #     Message(
-    #         role="user",
-    #         content="Hi.",
-    #         message_id=1,
-    #         chat_id=1,
-    #         topic_id=1,
-    #         ts=int(time.time()),
-    #     ),
-    #     Message(
-    #         role="assistant",
-    #         content="Hi. How can I assist you today?",
-    #         message_id=1,
-    #         chat_id=1,
-    #         topic_id=1,
-    #         ts=int(time.time() + 1),
-    #     )
-    # ]
-    # await topic_storage.append_message(1, messages)
-
-    # print(await t.get_messages(1))
-    # print(await t.list_topics(3, 1))
-    # await topic_storage.delete_topic(1)
-
 
 async def init(options):
     assert options.config is not None, "Config file is required"
@@ -189,8 +147,6 @@ async def init(options):
 
     if config.proxy_url is not None:
         asyncio_helper.proxy = config.proxy_url
-    # from migrate import main
-    # await main()
 
 
 async def get_bot_name():

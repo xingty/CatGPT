@@ -1,10 +1,9 @@
 from telebot.async_telebot import AsyncTeleBot
 from telebot.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
-from telebot.types import BotCommand
 
-from context import profiles, topic
-from utils.md2tgmd import escape
-from storage import types
+from ..context import profiles, topic
+from ..utils.md2tgmd import escape
+from ..storage import types
 
 
 async def get_convo(uid: int, chat_type: str) -> types.Topic:
@@ -60,7 +59,7 @@ async def handle_revoke(message: Message, bot: AsyncTeleBot):
 
 async def do_revoke(bot: AsyncTeleBot, operation: str, msg_ids: list[int], chat_id: int, uid: int, message: Message):
     message_id = msg_ids[0]
-    if operation != 'yes':
+    if operation == 'no':
         await bot.delete_messages(chat_id, [message_id, message.message_id])
         return
 

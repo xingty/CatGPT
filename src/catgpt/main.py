@@ -1,7 +1,9 @@
-from telebot.async_telebot import AsyncTeleBot
 import asyncio
 import argparse
-import context
+
+from telebot.async_telebot import AsyncTeleBot
+
+from . import context
 
 
 async def main():
@@ -17,11 +19,16 @@ async def main():
     await context.init(options)
     bot: AsyncTeleBot = context.bot
 
-    from commands import register_commands
+    from .commands import register_commands
     await register_commands(bot)
     print("CatGPT is running...")
     await bot.infinity_polling()
 
 
-if __name__ == '__main__':
+def launch():
     asyncio.run(main())
+
+
+if __name__ == '__main__':
+    launch()
+

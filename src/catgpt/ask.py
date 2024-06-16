@@ -1,7 +1,7 @@
 from openai import AsyncOpenAI
 
-from utils.prompt import get_system_prompt
-from context import Endpoint
+from .utils.prompt import get_system_prompt
+from .context import Endpoint
 
 
 def inject_system_prompt_if_need(messages: list, model: str):

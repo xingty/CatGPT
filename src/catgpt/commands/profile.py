@@ -1,8 +1,8 @@
 from telebot.async_telebot import AsyncTeleBot
 from telebot.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
 
-from utils.md2tgmd import escape
-from context import profiles
+from ..utils.md2tgmd import escape
+from ..context import profiles
 from . import get_profile_text
 
 

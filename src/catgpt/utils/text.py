@@ -1,4 +1,4 @@
-from storage import types
+from ..storage import types
 
 MAX_TEXT_LENGTH = 4096
 

@@ -1,4 +1,4 @@
-from storage import types
+from ..storage import types
 
 MODELS = {
     "gpt-4o": "2023-10",

@@ -3,8 +3,7 @@ import os
 
 from contextvars import ContextVar
 
-import storage
-
+from .. import storage
 
 class TxState(enum.Enum):
     Init = 0

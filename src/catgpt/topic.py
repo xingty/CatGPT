@@ -2,7 +2,7 @@ import uuid
 
 from telebot import types as tg_types
 
-from storage import types, tx
+from .storage import types, tx
 
 
 class Topic:
@@ -117,6 +117,7 @@ class Topic:
 
         topic.generate_title = 1
         topic.title = "new topic"
+        topic.label = str(uuid.uuid4()).replace("-", "")
         await self.storage.update_topic(topic)
 
     @tx.transactional(tx_type="write")

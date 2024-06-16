@@ -1,11 +1,11 @@
 from telebot.async_telebot import AsyncTeleBot
 from telebot.types import Message
 
-from context import topic, profiles, get_bot_name
-from utils.md2tgmd import escape
-from utils.prompt import get_prompt
+from ..context import topic, profiles, get_bot_name
+from ..utils.md2tgmd import escape
+from ..utils.prompt import get_prompt
 from . import get_profile_text
-from storage import tx
+from ..storage import tx
 
 
 async def handle_new_topic(message: Message, bot: AsyncTeleBot) -> None:

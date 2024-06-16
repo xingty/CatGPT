@@ -1,9 +1,9 @@
 from telebot.async_telebot import AsyncTeleBot
 from telebot.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
 
-from utils.md2tgmd import escape
-from context import profiles, config, get_bot_name
-from context import Endpoint
+from ..utils.md2tgmd import escape
+from ..context import profiles, config, get_bot_name
+from ..context import Endpoint
 
 
 async def handle_endpoints(message: Message, bot: AsyncTeleBot):

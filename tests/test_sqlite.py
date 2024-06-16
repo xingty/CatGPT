@@ -3,11 +3,11 @@ import unittest
 import asyncio
 
 import time
-from storage.sqlite3_session_storage import Sqlite3Datasource, Sqlite3TopicStorage, Sqlite3ProfileStorage
-import storage
-from storage import types
-from topic import Topic
-from user_profile import UserProfile
+from catgpt.storage.sqlite3_session_storage import Sqlite3Datasource, Sqlite3TopicStorage, Sqlite3ProfileStorage
+import catgpt.storage as storage
+from catgpt.storage import types
+from catgpt.topic import Topic
+from catgpt.user_profile import UserProfile
 
 schema = "file::memory:?cache=shared"
 datasource = Sqlite3Datasource(schema)

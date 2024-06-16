@@ -1,4 +1,4 @@
-from context import config
+from ..context import config
 import aiohttp
 
 HEADERS = {

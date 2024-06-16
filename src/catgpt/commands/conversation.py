@@ -1,11 +1,11 @@
 from telebot.async_telebot import AsyncTeleBot
 from telebot.types import Message, InlineKeyboardButton, InlineKeyboardMarkup, InputFile
 
-from utils.md2tgmd import escape
-from utils.text import encode_message_id
-from context import profiles, config, topic, get_bot_name
+from ..utils.md2tgmd import escape
+from ..utils.text import encode_message_id
+from ..context import profiles, config, topic, get_bot_name
 from . import show_conversation, share, send_file
-from storage import types
+from ..storage import types
 
 
 async def handle_conversation(message: Message, bot: AsyncTeleBot):

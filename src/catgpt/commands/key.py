@@ -3,7 +3,7 @@ import hmac
 from telebot.async_telebot import AsyncTeleBot
 from telebot.types import Message
 
-from context import profiles, config
+from ..context import profiles, config
 
 
 async def enroll(uid: int):

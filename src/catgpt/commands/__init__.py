@@ -8,12 +8,12 @@ from telebot.async_telebot import AsyncTeleBot
 from telebot.types import BotCommand
 from telebot.asyncio_helper import RequestTimeout
 
-from context import profiles, config, topic
-from utils.md2tgmd import escape
-from utils.text import messages_to_segments, decode_message_id
-from utils.prompt import get_prompt
-from share.github import create_or_update_issue
-from storage import types
+from ..context import profiles, config, topic
+from ..utils.md2tgmd import escape
+from ..utils.text import messages_to_segments, decode_message_id
+from ..utils.prompt import get_prompt
+from ..share.github import create_or_update_issue
+from ..storage import types
 
 
 async def send_message(
@@ -207,3 +207,4 @@ async def send_file(bot: AsyncTeleBot, message: Message, convo: types.Topic):
         chat_id=message.chat.id,
         document=file,
     )
+

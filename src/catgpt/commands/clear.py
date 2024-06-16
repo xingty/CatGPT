@@ -1,9 +1,9 @@
 from telebot.async_telebot import AsyncTeleBot
 from telebot.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
 
-from context import topic, profiles, get_bot_name
-from utils.md2tgmd import escape
-from utils.prompt import get_prompt
+from ..context import topic, profiles, get_bot_name
+from ..utils.md2tgmd import escape
+from ..utils.prompt import get_prompt
 
 DELETE_INSTRUCTIONS = ["history", "all"]
 

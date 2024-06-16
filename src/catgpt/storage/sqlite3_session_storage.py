@@ -2,12 +2,13 @@ import asyncio
 import sqlite3
 import os
 
-from storage import Datasource, types, tx, Topic
+from ..storage import Datasource, tx, Topic
+from ..storage import types
 
 VERSION = [
     {
         "version": "0.1.1",
-        "version_code": 202401010501,
+        "version_code": 2401010501,
         "sql_list": [
             ""
         ],
