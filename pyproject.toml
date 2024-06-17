@@ -26,4 +26,4 @@ distribution = true
 cat-gpt = "catgpt.main:launch"
 
 [tool.pdm.build]
-includes = ["src", "assets/", "presets.json", "start.py"]
+includes = ["src", "assets/", "start.py"]

@@ -10,20 +10,28 @@ DEFAULT_PROFILE = {
     "conversation": {}
 }
 
+DEFAULT_PRESET = {
+    "role": "System",
+    "prompt": None
+}
+
 
 class UserProfile:
-    def __init__(self, storage: types.ProfileStorage):
+    def __init__(self, storage: types.ProfileStorage, preset_file: Path):
         self.presets = {}
         self.storage = storage
 
-        self._init_context()
         self.memory = {}
 
-    def _init_context(self):
-        file = Path("presets.json")
-        presets: [] = json.loads(file.read_text())
-        for preset in presets:
-            self.presets[preset['role']] = preset
+        if preset_file.exists():
+            print(preset_file)
+            presets: [] = json.loads(preset_file.read_text())
+            for preset in presets:
+                if "role" in preset and "prompt" in preset:
+                    self.presets[preset['role']] = preset
+
+        if len(self.presets) == 0:
+            self.presets["System"] = DEFAULT_PRESET
 
     async def load(self, uid: int) -> types.Profile:
         return await self.storage.get_profile(uid)

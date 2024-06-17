@@ -1,5 +1,7 @@
 from telebot.async_telebot import AsyncTeleBot, asyncio_helper
 
+from pathlib import Path
+
 from .user_profile import UserProfile
 from .topic import Topic
 from . import storage
@@ -131,13 +133,17 @@ async def init_datasource(options):
     global profiles
     from .storage.sqlite3_session_storage import Sqlite3Datasource, Sqlite3TopicStorage, Sqlite3ProfileStorage
 
-    datasource = Sqlite3Datasource("data.db")
+    schema_file = Path(__file__).parent.joinpath("data").joinpath("session_schema.sql")
+
+    datasource = Sqlite3Datasource("data.db", schema_file)
     storage.datasource = datasource
     topic_storage = Sqlite3TopicStorage()
     topic = Topic(topic_storage)
 
     profile_storage = Sqlite3ProfileStorage()
-    profiles = UserProfile(profile_storage)
+    f_preset = Path(options.preset or "presets.json")
+
+    profiles = UserProfile(profile_storage, f_preset)
 
 
 async def init(options):

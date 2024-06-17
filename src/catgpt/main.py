@@ -15,6 +15,13 @@ async def main():
         help="Config file",
     )
 
+    parser.add_argument(
+        '--preset',
+        type=str,
+        required=False,
+        help="preset file",
+    )
+
     options = parser.parse_args()
     await context.init(options)
     bot: AsyncTeleBot = context.bot

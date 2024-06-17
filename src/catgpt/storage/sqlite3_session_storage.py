@@ -2,6 +2,8 @@ import asyncio
 import sqlite3
 import os
 
+from pathlib import Path
+
 from ..storage import Datasource, tx, Topic
 from ..storage import types
 
@@ -44,15 +46,14 @@ class ConnectionProxy:
 
 
 class Sqlite3Datasource(Datasource):
-    def __init__(self, db_file: str, schema_file: str = "assets/session_schema.sql"):
+    def __init__(self, db_file: str, schema_file: Path):
         self.db_file = db_file
         self.pool = asyncio.Queue(1)
 
         if not os.path.exists(self.db_file):
             conn = sqlite3.connect(self.db_file)
-            with open(schema_file) as f:
-                schema = f.read()
-                conn.executescript(schema)
+            schema_commands = schema_file.read_text(encoding="utf-8")
+            conn.executescript(schema_commands)
             conn.execute("pragma journal_mode=wal;")
             conn.close()
 
