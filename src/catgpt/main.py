@@ -9,14 +9,14 @@ from . import context
 async def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '--config',
+        "--config",
         type=str,
         required=True,
         help="Config file",
     )
 
     parser.add_argument(
-        '--preset',
+        "--preset",
         type=str,
         required=False,
         help="preset file",
@@ -27,6 +27,7 @@ async def main():
     bot: AsyncTeleBot = context.bot
 
     from .commands import register_commands
+
     await register_commands(bot)
     print("CatGPT is running...")
     await bot.infinity_polling()
@@ -36,6 +37,5 @@ def launch():
     asyncio.run(main())
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     launch()
-

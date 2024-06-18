@@ -7,11 +7,11 @@ from . import get_profile_text
 
 
 async def handle_profiles(message: Message, bot: AsyncTeleBot):
-    context = f'{message.message_id}:{message.chat.id}:{message.from_user.id}'
+    context = f"{message.message_id}:{message.chat.id}:{message.from_user.id}"
     keyboard = []
     items = []
     for name in profiles.presets.keys():
-        callback_data = f'profile:{name}:{context}'
+        callback_data = f"profile:{name}:{context}"
         if len(items) == 3:
             keyboard.append(items)
             items = []
@@ -19,7 +19,13 @@ async def handle_profiles(message: Message, bot: AsyncTeleBot):
 
     if len(items) > 0:
         keyboard.append(items)
-        keyboard.append([InlineKeyboardButton("dismiss", callback_data=f'{action["name"]}:dismiss:{context}')])
+        keyboard.append(
+            [
+                InlineKeyboardButton(
+                    "dismiss", callback_data=f'{action["name"]}:dismiss:{context}'
+                )
+            ]
+        )
 
     profile = await profiles.load(message.from_user.id)
     state_text = await get_profile_text(profile, message.chat.type)
@@ -28,11 +34,18 @@ async def handle_profiles(message: Message, bot: AsyncTeleBot):
         chat_id=message.chat.id,
         text=state_text,
         reply_markup=InlineKeyboardMarkup(keyboard),
-        parse_mode="MarkdownV2"
+        parse_mode="MarkdownV2",
     )
 
 
-async def do_profile_change(bot: AsyncTeleBot, operation: str, msg_ids: list[int], chat_id: int, uid: int, message: Message):
+async def do_profile_change(
+    bot: AsyncTeleBot,
+    operation: str,
+    msg_ids: list[int],
+    chat_id: int,
+    uid: int,
+    message: Message,
+):
     message_id = msg_ids[0]
     if operation == "dismiss":
         await bot.delete_messages(chat_id, [message_id, message.message_id])
@@ -46,13 +59,13 @@ async def do_profile_change(bot: AsyncTeleBot, operation: str, msg_ids: list[int
         chat_id=chat_id,
         reply_to_message_id=message_id,
         parse_mode="MarkdownV2",
-        text=escape(text)
+        text=escape(text),
     )
 
 
 def register(bot: AsyncTeleBot, decorator, action_provider):
     handler = decorator(handle_profiles)
-    bot.register_message_handler(handler, pass_bot=True, commands=['profile'])
+    bot.register_message_handler(handler, pass_bot=True, commands=["profile"])
 
     action_provider[action["name"]] = do_profile_change
 
@@ -60,7 +73,7 @@ def register(bot: AsyncTeleBot, decorator, action_provider):
 
 
 action = {
-    "name": 'profile',
-    "description": 'show presets',
+    "name": "profile",
+    "description": "show presets",
     "order": 40,
 }

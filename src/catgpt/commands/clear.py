@@ -16,25 +16,38 @@ async def handle_clear(message: Message, bot: AsyncTeleBot) -> None:
         await do_clear(bot, text, [message.message_id], message.chat.id, uid, message)
         return
 
-    context = f'{message.message_id}:{message.chat.id}:{message.from_user.id}'
+    context = f"{message.message_id}:{message.chat.id}:{message.from_user.id}"
     keyboard = [
         [
-            InlineKeyboardButton("clear", callback_data=f'{action["name"]}:yes:{context}'),
-            InlineKeyboardButton("delete", callback_data=f'{action["name"]}:all:{context}'),
-            InlineKeyboardButton("dismiss", callback_data=f'{action["name"]}:no:{context}'),
+            InlineKeyboardButton(
+                "clear", callback_data=f'{action["name"]}:yes:{context}'
+            ),
+            InlineKeyboardButton(
+                "delete", callback_data=f'{action["name"]}:all:{context}'
+            ),
+            InlineKeyboardButton(
+                "dismiss", callback_data=f'{action["name"]}:no:{context}'
+            ),
         ],
     ]
 
     reply_markup = InlineKeyboardMarkup(keyboard)
     await bot.send_message(
         chat_id=message.chat.id,
-        text='Chat history in current window will be cleared, are you sure?',
-        reply_markup=reply_markup
+        text="Chat history in current window will be cleared, are you sure?",
+        reply_markup=reply_markup,
     )
 
 
-async def do_clear(bot: AsyncTeleBot, operation: str, msg_id: list[int], chat_id: int, uid: int, message: Message) -> None:
-    message_id = msg_id[0]
+async def do_clear(
+    bot: AsyncTeleBot,
+    operation: str,
+    msg_ids: list[int],
+    chat_id: int,
+    uid: int,
+    message: Message,
+) -> None:
+    message_id = msg_ids[0]
     if operation == "no":
         await bot.delete_messages(chat_id, [message_id, message.message_id])
         return
@@ -53,7 +66,7 @@ async def do_clear(bot: AsyncTeleBot, operation: str, msg_id: list[int], chat_id
         chat_id=chat_id,
         text=escape("`Context cleared.`"),
         reply_to_message_id=message_id,
-        parse_mode="MarkdownV2"
+        parse_mode="MarkdownV2",
     )
     await bot.delete_messages(chat_id, [message_id, message.message_id])
 
@@ -66,16 +79,11 @@ async def do_clear(bot: AsyncTeleBot, operation: str, msg_id: list[int], chat_id
 
 def register(bot: AsyncTeleBot, decorator, action_provider):
     handler = decorator(handle_clear)
-    bot.register_message_handler(handler, pass_bot=True, commands=['clear'])
+    bot.register_message_handler(handler, pass_bot=True, commands=["clear"])
 
     action_provider[action["name"]] = do_clear
 
     return action
 
 
-action = {
-    "name": 'clear',
-    "description": 'clear context: [history|all]',
-    "order": 80
-}
-
+action = {"name": "clear", "description": "clear context: [history|all]", "order": 80}

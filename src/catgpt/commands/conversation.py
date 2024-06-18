@@ -27,7 +27,7 @@ async def handle_conversation(message: Message, bot: AsyncTeleBot):
             uid=uid,
             bot=bot,
             convo=convo,
-            reply_msg_id=message.message_id
+            reply_msg_id=message.message_id,
         )
         return
 
@@ -44,17 +44,17 @@ async def handle_conversation(message: Message, bot: AsyncTeleBot):
             chat_id=message.chat.id,
             reply_to_message_id=message.message_id,
             parse_mode="MarkdownV2",
-            text=escape(f"topic's title has been updated to `{instruction}`")
+            text=escape(f"topic's title has been updated to `{instruction}`"),
         )
 
 
 async def handle_download(
-        bot: AsyncTeleBot,
-        operation: str,
-        msg_ids: list[int],
-        chat_id: int,
-        uid: str,
-        message: Message
+    bot: AsyncTeleBot,
+    operation: str,
+    msg_ids: list[int],
+    chat_id: int,
+    uid: str,
+    message: Message,
 ):
     convo = await topic.get_topic(int(operation), fetch_messages=True)
     await send_file(bot, message, convo)
@@ -62,12 +62,12 @@ async def handle_download(
 
 
 async def handle_share(
-        bot: AsyncTeleBot,
-        operation: str,
-        msg_ids: list[int],
-        chat_id: int,
-        uid: str,
-        message: Message
+    bot: AsyncTeleBot,
+    operation: str,
+    msg_ids: list[int],
+    chat_id: int,
+    uid: str,
+    message: Message,
 ):
     convo = await topic.get_topic(int(operation))
     message_id = msg_ids[0]
@@ -76,7 +76,7 @@ async def handle_share(
             chat_id=chat_id,
             reply_to_message_id=message_id,
             parse_mode="MarkdownV2",
-            text=escape(f'topic not found')
+            text=escape(f"topic not found"),
         )
         return
 
@@ -85,33 +85,37 @@ async def handle_share(
             chat_id=chat_id,
             reply_to_message_id=message_id,
             parse_mode="MarkdownV2",
-            text=escape(f"Please set share info in config")
+            text=escape(f"Please set share info in config"),
         )
         return
 
     encoded_msg_id = encode_message_id(msg_ids + [message.message_id])
-    context = f'{encoded_msg_id}:{message.chat.id}:{uid}'
-    buttons = [[
-        InlineKeyboardButton("yes", callback_data=f'do_share:yes_{operation}:{context}'),
-        InlineKeyboardButton("no", callback_data=f'do_share:no:{context}'),
-    ]]
+    context = f"{encoded_msg_id}:{message.chat.id}:{uid}"
+    buttons = [
+        [
+            InlineKeyboardButton(
+                "yes", callback_data=f"do_share:yes_{operation}:{context}"
+            ),
+            InlineKeyboardButton("no", callback_data=f"do_share:no:{context}"),
+        ]
+    ]
 
     await bot.send_message(
         chat_id=chat_id,
         reply_to_message_id=message_id,
         parse_mode="MarkdownV2",
         text=escape(f"Share this topic `<{convo.title}>` to github?"),
-        reply_markup=InlineKeyboardMarkup(buttons)
+        reply_markup=InlineKeyboardMarkup(buttons),
     )
 
 
 async def do_share(
-        bot: AsyncTeleBot,
-        operation: str,
-        msg_ids: list[int],
-        chat_id: int,
-        uid: str,
-        message: Message
+    bot: AsyncTeleBot,
+    operation: str,
+    msg_ids: list[int],
+    chat_id: int,
+    uid: str,
+    message: Message,
 ):
     if operation == "no":
         await bot.delete_message(chat_id, message.message_id)
@@ -129,20 +133,20 @@ async def _do_share(convo: types.Topic, bot: AsyncTeleBot, message: Message):
             chat_id=message.chat.id,
             parse_mode="MarkdownV2",
             text=escape(f"Title: {convo.title}\nShare link: {html_url}"),
-            disable_web_page_preview=False
+            disable_web_page_preview=False,
         )
     except Exception as e:
         await bot.send_message(
             chat_id=message.chat.id,
             parse_mode="MarkdownV2",
             text=str(e),
-            disable_web_page_preview=True
+            disable_web_page_preview=True,
         )
 
 
 def register(bot: AsyncTeleBot, decorator, action_provider):
     handler = decorator(handle_conversation)
-    bot.register_message_handler(handler, pass_bot=True, commands=[action['name']])
+    bot.register_message_handler(handler, pass_bot=True, commands=[action["name"]])
 
     action_provider["share"] = handle_share
     action_provider["download"] = handle_download

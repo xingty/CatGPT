@@ -36,7 +36,7 @@ async def handle_models(message: Message, bot: AsyncTeleBot):
                 model=text,
                 msg_ids=[message.message_id],
                 chat_id=message.chat.id,
-                uid=uid
+                uid=uid,
             )
             return
         elif SHORT_NAME.get(text, None) in models:
@@ -46,7 +46,7 @@ async def handle_models(message: Message, bot: AsyncTeleBot):
                 model=SHORT_NAME[text],
                 msg_ids=[message.message_id],
                 chat_id=message.chat.id,
-                uid=uid
+                uid=uid,
             )
             return
 
@@ -56,23 +56,23 @@ async def handle_models(message: Message, bot: AsyncTeleBot):
         endpoint=endpoint,
         message_id=message.message_id,
         chat_id=message.chat.id,
-        uid=uid
+        uid=uid,
     )
 
 
 async def display_models(
-        bot: AsyncTeleBot,
-        profile: types.Profile,
-        endpoint: Endpoint,
-        message_id: int,
-        chat_id: int,
-        uid: int
+    bot: AsyncTeleBot,
+    profile: types.Profile,
+    endpoint: Endpoint,
+    message_id: int,
+    chat_id: int,
+    uid: int,
 ):
-    context = f'{message_id}:{chat_id}:{uid}'
+    context = f"{message_id}:{chat_id}:{uid}"
     keyboard = []
     items = []
 
-    for model in (endpoint.models or []):
+    for model in endpoint.models or []:
         callback_data = f'{action["name"]}:{model}:{context}'
         if len(items) == 2:
             keyboard.append(items)
@@ -81,18 +81,31 @@ async def display_models(
 
     if len(items) > 0:
         keyboard.append(items)
-        keyboard.append([InlineKeyboardButton("dismiss", callback_data=f'{action["name"]}:dismiss:{context}')])
+        keyboard.append(
+            [
+                InlineKeyboardButton(
+                    "dismiss", callback_data=f'{action["name"]}:dismiss:{context}'
+                )
+            ]
+        )
 
     msg_text = f'current endpoint: `{profile.endpoint or "None"}`\ncurrent model: `{profile.model or "None"}`\n'
     await bot.send_message(
         chat_id=chat_id,
         text=escape(msg_text),
         parse_mode="MarkdownV2",
-        reply_markup=InlineKeyboardMarkup(keyboard)
+        reply_markup=InlineKeyboardMarkup(keyboard),
     )
 
 
-async def do_model_change(bot: AsyncTeleBot, operation: str, msg_ids: list[int], chat_id: int, uid: int, message: Message):
+async def do_model_change(
+    bot: AsyncTeleBot,
+    operation: str,
+    msg_ids: list[int],
+    chat_id: int,
+    uid: int,
+    message: Message,
+):
     if operation == "dismiss":
         await bot.delete_messages(chat_id, [message.message_id, msg_ids[0]])
         return
@@ -104,17 +117,17 @@ async def do_model_change(bot: AsyncTeleBot, operation: str, msg_ids: list[int],
         model=operation,
         msg_ids=msg_ids + [message.message_id],
         chat_id=chat_id,
-        uid=uid
+        uid=uid,
     )
 
 
 async def _do_model_change(
-        bot: AsyncTeleBot,
-        profile: types.Profile,
-        model: str,
-        msg_ids: list[int],
-        chat_id: int,
-        uid: int
+    bot: AsyncTeleBot,
+    profile: types.Profile,
+    model: str,
+    msg_ids: list[int],
+    chat_id: int,
+    uid: int,
 ):
     if profile.model != model:
         message_id = msg_ids[0]
@@ -124,7 +137,7 @@ async def _do_model_change(
                 chat_id=chat_id,
                 reply_to_message_id=message_id,
                 parse_mode="MarkdownV2",
-                text=escape(f'endpoint not found')
+                text=escape(f"endpoint not found"),
             )
             return
 
@@ -133,7 +146,7 @@ async def _do_model_change(
                 chat_id=chat_id,
                 reply_to_message_id=message_id,
                 parse_mode="MarkdownV2",
-                text=escape(f'current endpoint does not support the model `{model}`')
+                text=escape(f"current endpoint does not support the model `{model}`"),
             )
             return
 
@@ -143,14 +156,14 @@ async def _do_model_change(
     await bot.send_message(
         chat_id=chat_id,
         parse_mode="MarkdownV2",
-        text=escape(f'current model: `{model}`')
+        text=escape(f"current model: `{model}`"),
     )
     await bot.delete_messages(chat_id, msg_ids)
 
 
 def register(bot: AsyncTeleBot, decorator, action_provider):
     handler = decorator(handle_models)
-    bot.register_message_handler(handler, pass_bot=True, commands=[action['name']])
+    bot.register_message_handler(handler, pass_bot=True, commands=[action["name"]])
 
     action_provider[action["name"]] = do_model_change
 
@@ -158,7 +171,7 @@ def register(bot: AsyncTeleBot, decorator, action_provider):
 
 
 action = {
-    "name": 'models',
-    "description": 'list models: [model_name]',
+    "name": "models",
+    "description": "list models: [model_name]",
     "order": 60,
 }

@@ -6,7 +6,7 @@ MODELS = {
     "gpt-4-0125-preview": "2023-11",
     "gpt-4-1106-preview": "2023-04",
     "gpt-4-turbo": "2023-11",
-    "gpt-4": "2023-09"
+    "gpt-4": "2023-09",
 }
 
 DEFAULT_SYSTEM_TEMPLATE = """
@@ -31,12 +31,7 @@ def get_system_prompt(model):
 def get_prompt(prompt) -> types.Message | None:
     if prompt:
         return types.Message(
-            role="system",
-            content=prompt,
-            message_id=0,
-            chat_id=0,
-            ts=0,
-            topic_id=0
+            role="system", content=prompt, message_id=0, chat_id=0, ts=0, topic_id=0
         )
 
     return None

@@ -3,7 +3,11 @@ import unittest
 import asyncio
 
 import time
-from catgpt.storage.sqlite3_session_storage import Sqlite3Datasource, Sqlite3TopicStorage, Sqlite3ProfileStorage
+from catgpt.storage.sqlite3_session_storage import (
+    Sqlite3Datasource,
+    Sqlite3TopicStorage,
+    Sqlite3ProfileStorage,
+)
 import catgpt.storage as storage
 from catgpt.storage import types
 from catgpt.topic import Topic
@@ -44,7 +48,7 @@ class TestService(IsolatedAsyncioTestCase):
                     chat_id=1,
                     topic_id=1,
                     ts=int(time.time() + 1),
-                )
+                ),
             ]
 
             record = await topic.new_topic(
@@ -52,23 +56,23 @@ class TestService(IsolatedAsyncioTestCase):
                 chat_id=1,
                 user_id=3,
                 messages=messages,
-                generate_title=True
+                generate_title=True,
             )
 
             self.assertTrue(record.tid > 0)
             self.internal_tid = record.tid
-            data_in_db: types.Topic = await topic.get_topic(record.tid, fetch_messages=True)
-            self.assertTrue(data_in_db.tid == record.tid and len(data_in_db.messages) == 2)
+            data_in_db: types.Topic = await topic.get_topic(
+                record.tid, fetch_messages=True
+            )
+            self.assertTrue(
+                data_in_db.tid == record.tid and len(data_in_db.messages) == 2
+            )
 
         asyncio.run(init_data())
 
     async def test_new_topic(self):
         record = await topic.new_topic(
-            title="test",
-            chat_id=1,
-            user_id=3,
-            messages=[],
-            generate_title=True
+            title="test", chat_id=1, user_id=3, messages=[], generate_title=True
         )
 
         self.assertTrue(record.tid > 0)

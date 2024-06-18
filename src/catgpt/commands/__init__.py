@@ -17,12 +17,12 @@ from ..storage import types
 
 
 async def send_message(
-        bot: AsyncTeleBot,
-        chat_id: int,
-        reply_id: int,
-        text: str,
-        parse_mode: str = "MarkdownV2",
-        disable_preview: bool = True
+    bot: AsyncTeleBot,
+    chat_id: int,
+    reply_id: int,
+    text: str,
+    parse_mode: str = "MarkdownV2",
+    disable_preview: bool = True,
 ):
     retry_counter = 0
     while retry_counter < 3:
@@ -32,7 +32,7 @@ async def send_message(
                 text=escape(text),
                 reply_to_message_id=reply_id,
                 parse_mode=parse_mode,
-                disable_web_page_preview=disable_preview
+                disable_web_page_preview=disable_preview,
             )
             break
         except RequestTimeout as e:
@@ -75,7 +75,7 @@ async def register_commands(bot: AsyncTeleBot) -> None:
     @bot.callback_query_handler(func=lambda call: True)
     async def callback_handler(call):
         message: Message = call.message
-        segments = call.data.split(':')
+        segments = call.data.split(":")
         uid = call.from_user.id
         target = segments[0]
         operation = segments[1]
@@ -108,14 +108,17 @@ def all_modules() -> list[str]:
 
 
 async def show_conversation(
-        chat_id: int,
-        msg_id: int,
-        uid: int, bot: AsyncTeleBot,
-        convo: types.Topic,
-        reply_msg_id: int = None
+    chat_id: int,
+    msg_id: int,
+    uid: int,
+    bot: AsyncTeleBot,
+    convo: types.Topic,
+    reply_msg_id: int = None,
 ):
     messages: list[types.Message] = convo.messages or []
-    messages = [msg for msg in messages if (msg.role != "system" and msg.chat_id == chat_id)]
+    messages = [
+        msg for msg in messages if (msg.role != "system" and msg.chat_id == chat_id)
+    ]
     segments = messages_to_segments(messages)
     if len(segments) == 0:
         await bot.send_message(
@@ -126,11 +129,15 @@ async def show_conversation(
         return
 
     last_message_id = reply_msg_id
-    context = f'{msg_id}:{chat_id}:{uid}'
-    keyboard = [[
-        InlineKeyboardButton("Share", callback_data=f'share:{convo.tid}:{context}'),
-        InlineKeyboardButton("Download", callback_data=f'download:{convo.tid}:{context}')
-    ]]
+    context = f"{msg_id}:{chat_id}:{uid}"
+    keyboard = [
+        [
+            InlineKeyboardButton("Share", callback_data=f"share:{convo.tid}:{context}"),
+            InlineKeyboardButton(
+                "Download", callback_data=f"download:{convo.tid}:{context}"
+            ),
+        ]
+    ]
     for content in segments:
         reply_msg: Message = await bot.send_message(
             chat_id=chat_id,
@@ -144,11 +151,7 @@ async def show_conversation(
 
 
 async def create_convo_and_update_profile(
-        uid: int,
-        chat_id: int,
-        profile: types.Profile,
-        chat_type: str,
-        title: str = None
+    uid: int, chat_id: int, profile: types.Profile, chat_type: str, title: str = None
 ) -> types.Topic:
     prompt = get_prompt(profiles.get_prompt(profile.prompt))
     messages = [prompt] if prompt else None
@@ -158,7 +161,7 @@ async def create_convo_and_update_profile(
         chat_id=chat_id,
         user_id=uid,
         messages=messages,
-        generate_title=title is None or len(title) == 0
+        generate_title=title is None or len(title) == 0,
     )
 
     profile.set_conversation_id(convo.tid, chat_type)
@@ -197,7 +200,11 @@ async def share(convo: types.Topic):
 
 async def send_file(bot: AsyncTeleBot, message: Message, convo: types.Topic):
     messages: list[types.Message] = convo.messages or []
-    messages = [msg for msg in messages if (msg.role != "system" and msg.chat_id == message.chat.id)]
+    messages = [
+        msg
+        for msg in messages
+        if (msg.role != "system" and msg.chat_id == message.chat.id)
+    ]
     segment = messages_to_segments(messages, 65536)[0]
     file_object = BytesIO(segment.encode("utf-8"))
     file_object.name = f"{convo.title}.md"
@@ -207,4 +214,3 @@ async def send_file(bot: AsyncTeleBot, message: Message, convo: types.Topic):
         chat_id=message.chat.id,
         document=file,
     )
-

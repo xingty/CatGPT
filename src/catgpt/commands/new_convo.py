@@ -10,7 +10,7 @@ from ..storage import tx
 
 async def handle_new_topic(message: Message, bot: AsyncTeleBot) -> None:
     bot_name = await get_bot_name()
-    text = message.text.replace('/new', '').replace(bot_name, "").strip()
+    text = message.text.replace("/new", "").replace(bot_name, "").strip()
     uid = message.from_user.id
 
     await create_convo(
@@ -19,46 +19,38 @@ async def handle_new_topic(message: Message, bot: AsyncTeleBot) -> None:
         chat_id=message.chat.id,
         uid=uid,
         chat_type=message.chat.type,
-        title=text
+        title=text,
     )
 
 
 @tx.transactional(tx_type="write")
 async def create_topic_and_update_profile(
-        chat_id: int,
-        uid: int,
-        chat_type: str,
-        title: str = None,
-        messages: list = None
+    chat_id: int, uid: int, chat_type: str, title: str = None, messages: list = None
 ):
     convo = await topic.new_topic(
         title=title,
         chat_id=chat_id,
         user_id=uid,
         messages=messages,
-        generate_title=title is None or len(title) == 0
+        generate_title=title is None or len(title) == 0,
     )
     await profiles.update_conversation_id(uid, chat_type, convo.tid)
     return convo
 
 
 async def create_convo(
-        bot: AsyncTeleBot,
-        msg_id: int,
-        chat_id: int,
-        uid: int,
-        chat_type: str,
-        title: str = None
+    bot: AsyncTeleBot,
+    msg_id: int,
+    chat_id: int,
+    uid: int,
+    chat_type: str,
+    title: str = None,
 ) -> None:
     profile = await profiles.load(uid)
     prompt = get_prompt(profiles.get_prompt(profile.prompt))
     messages = [prompt] if prompt else None
     convo = await create_topic_and_update_profile(
-        chat_id=chat_id,
-        uid=uid,
-        chat_type=chat_type,
-        title=title,
-        messages=messages
+        chat_id=chat_id, uid=uid, chat_type=chat_type, title=title, messages=messages
     )
 
     profile.set_conversation_id(convo.tid, chat_type)
@@ -69,19 +61,15 @@ async def create_convo(
         chat_id=chat_id,
         text=escape(text),
         reply_to_message_id=msg_id,
-        parse_mode="MarkdownV2"
+        parse_mode="MarkdownV2",
     )
 
 
 def register(bot: AsyncTeleBot, decorator, action_provider):
     handler = decorator(handle_new_topic)
-    bot.register_message_handler(handler, pass_bot=True, commands=['new'])
+    bot.register_message_handler(handler, pass_bot=True, commands=["new"])
 
     return action
 
 
-action = {
-    "name": 'new',
-    "description": 'start a new topic: [title]',
-    "order": 10
-}
+action = {"name": "new", "description": "start a new topic: [title]", "order": 10}

@@ -9,18 +9,18 @@ from . import share, send_file
 
 
 async def show_conversation_list(
-        uid: int,
-        msg_id: int,
-        chat_id: int,
-        bot: AsyncTeleBot,
-        chat_type: str,
-        edit_msg_id: int = -1
+    uid: int,
+    msg_id: int,
+    chat_id: int,
+    bot: AsyncTeleBot,
+    chat_type: str,
+    edit_msg_id: int = -1,
 ):
     profile = await profiles.load(uid)
     convo_id = profile.get_conversation_id(chat_type)
 
     current_convo = await topic.get_topic(convo_id)
-    context = f'{msg_id}:{chat_id}:{uid}'
+    context = f"{msg_id}:{chat_id}:{uid}"
     keyboard = []
     items = []
 
@@ -28,16 +28,22 @@ async def show_conversation_list(
     text = f"Current topic: `{title}` \n\nlist of topics:\n"
     conversations = await topic.list_topics(int(uid), chat_id)
     for index, convo in enumerate(conversations):
-        callback_data = f'list_tips:{convo.tid}:{context}'
+        callback_data = f"list_tips:{convo.tid}:{context}"
         if len(items) == 5:
             keyboard.append(items)
             items = []
-        items.append(InlineKeyboardButton(index+1, callback_data=callback_data))
+        items.append(InlineKeyboardButton(index + 1, callback_data=callback_data))
         text += f"{index+1}. {convo.title}\n"
 
     if len(items) > 0:
         keyboard.append(items)
-        keyboard.append([InlineKeyboardButton("dismiss", callback_data=f'list_tips:dismiss:{context}')])
+        keyboard.append(
+            [
+                InlineKeyboardButton(
+                    "dismiss", callback_data=f"list_tips:dismiss:{context}"
+                )
+            ]
+        )
 
     if edit_msg_id <= 0:
         await bot.send_message(
@@ -56,11 +62,20 @@ async def show_conversation_list(
 
 async def handle_convo(message: Message, bot: AsyncTeleBot):
     uid = message.from_user.id
-    await show_conversation_list(uid, message.message_id, message.chat.id, bot, message.chat.type)
+    await show_conversation_list(
+        uid, message.message_id, message.chat.id, bot, message.chat.type
+    )
 
 
-async def do_convo_change(bot: AsyncTeleBot, operation: str, msg_ids: list[int], chat_id: int, uid: int, message: Message):
-    segs = operation.split('_')
+async def do_convo_change(
+    bot: AsyncTeleBot,
+    operation: str,
+    msg_ids: list[int],
+    chat_id: int,
+    uid: int,
+    message: Message,
+):
+    segs = operation.split("_")
     real_op = segs[0]
     conversation_id = int(segs[1])
 
@@ -69,7 +84,7 @@ async def do_convo_change(bot: AsyncTeleBot, operation: str, msg_ids: list[int],
         await bot.send_message(
             chat_id=chat_id,
             parse_mode="MarkdownV2",
-            text=escape(f'topic `{conversation_id}` not found')
+            text=escape(f"topic `{conversation_id}` not found"),
         )
         return
 
@@ -86,7 +101,7 @@ async def do_convo_change(bot: AsyncTeleBot, operation: str, msg_ids: list[int],
             chat_id=chat_id,
             parse_mode="MarkdownV2",
             text=escape(f"Share link: {html_url}"),
-            disable_web_page_preview=False
+            disable_web_page_preview=False,
         )
     elif real_op == "dl":
         await send_file(bot, message, convo)
@@ -98,7 +113,7 @@ async def do_convo_change(bot: AsyncTeleBot, operation: str, msg_ids: list[int],
             chat_id=chat_id,
             bot=bot,
             chat_type=message.chat.type,
-            edit_msg_id=msg_ids[1]
+            edit_msg_id=msg_ids[1],
         )
 
     elif real_op == "c":  # cancel
@@ -108,12 +123,12 @@ async def do_convo_change(bot: AsyncTeleBot, operation: str, msg_ids: list[int],
 
 
 async def do_handle_tips(
-        bot: AsyncTeleBot,
-        operation: str,
-        msg_ids: list[int],
-        chat_id: int,
-        uid: int,
-        message: Message
+    bot: AsyncTeleBot,
+    operation: str,
+    msg_ids: list[int],
+    chat_id: int,
+    uid: int,
+    message: Message,
 ):
     if operation == "dismiss":
         await bot.delete_messages(chat_id, [message.message_id, msg_ids[0]])
@@ -124,7 +139,7 @@ async def do_handle_tips(
     my_message_ids = msg_ids + [message.message_id]
     encoded_ids = encode_message_id(my_message_ids)
 
-    context = f'{encoded_ids}:{message.chat.id}:{uid}'
+    context = f"{encoded_ids}:{message.chat.id}:{uid}"
     op_switch = f"s_{conversation_id}"
     op_share = f"sr_{conversation_id}"
     op_dl = f"dl_{conversation_id}"
@@ -133,14 +148,24 @@ async def do_handle_tips(
 
     buttons = [
         [
-            InlineKeyboardButton("switch", callback_data=f'{action["name"]}:{op_switch}:{context}'),
-            InlineKeyboardButton("share", callback_data=f'{action["name"]}:{op_share}:{context}'),
-            InlineKeyboardButton("download", callback_data=f'{action["name"]}:{op_dl}:{context}'),
-            InlineKeyboardButton("delete", callback_data=f'{action["name"]}:{op_delete}:{context}'),
+            InlineKeyboardButton(
+                "switch", callback_data=f'{action["name"]}:{op_switch}:{context}'
+            ),
+            InlineKeyboardButton(
+                "share", callback_data=f'{action["name"]}:{op_share}:{context}'
+            ),
+            InlineKeyboardButton(
+                "download", callback_data=f'{action["name"]}:{op_dl}:{context}'
+            ),
+            InlineKeyboardButton(
+                "delete", callback_data=f'{action["name"]}:{op_delete}:{context}'
+            ),
         ],
         [
-            InlineKeyboardButton("dismiss", callback_data=f'{action["name"]}:{op_cancel}:{context}')
-        ]
+            InlineKeyboardButton(
+                "dismiss", callback_data=f'{action["name"]}:{op_cancel}:{context}'
+            )
+        ],
     ]
     messages = convo.messages
     fragments = []
@@ -152,22 +177,24 @@ async def do_handle_tips(
     if len(segments) > 0:
         summary = segments[0]
 
-    preview_message = f"**What would you like to do on the topic** `<{convo.title}>`?\n\n{summary}"
+    preview_message = (
+        f"**What would you like to do on the topic** `<{convo.title}>`?\n\n{summary}"
+    )
     preview_message = escape(preview_message)
     if len(preview_message) > MAX_TEXT_LENGTH:
-        preview_message = preview_message[:MAX_TEXT_LENGTH - 3] + "..."
+        preview_message = preview_message[: MAX_TEXT_LENGTH - 3] + "..."
 
     await bot.send_message(
         chat_id=chat_id,
         parse_mode="MarkdownV2",
         text=preview_message,
-        reply_markup=InlineKeyboardMarkup(buttons)
+        reply_markup=InlineKeyboardMarkup(buttons),
     )
 
 
 def register(bot: AsyncTeleBot, decorator, action_provider):
     handler = decorator(handle_convo)
-    bot.register_message_handler(handler, pass_bot=True, commands=[action['name']])
+    bot.register_message_handler(handler, pass_bot=True, commands=[action["name"]])
 
     action_provider["list_tips"] = do_handle_tips
     action_provider[action["name"]] = do_convo_change
@@ -176,8 +203,8 @@ def register(bot: AsyncTeleBot, decorator, action_provider):
 
 
 action = {
-    "name": 'list',
-    "description": 'all topics',
+    "name": "list",
+    "description": "all topics",
     "delete_after_invoke": False,
-    "order": 20
+    "order": 20,
 }

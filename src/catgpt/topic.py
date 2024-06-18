@@ -13,27 +13,35 @@ class Topic:
         return await self.storage.get_messages(topic_ids)
 
     async def append_messages(
-            self, topic_id: int,
-            user_message: tg_types.Message,
-            assistant_message: tg_types.Message
+        self,
+        topic_id: int,
+        user_message: tg_types.Message,
+        assistant_message: tg_types.Message,
     ):
+        msg_type = user_message.content_type
+        msg = types.Message(
+            role="user",
+            content=user_message.text,
+            message_id=user_message.message_id,
+            chat_id=user_message.chat.id,
+            ts=user_message.date,
+            topic_id=topic_id,
+            message_type=0 if msg_type == "text" else 1,
+        )
+        if msg_type == "photo":
+            msg.media_url = user_message.text
+            msg.content = user_message.caption
+
         messages = [
-            types.Message(
-                role="user",
-                content=user_message.text,
-                message_id=user_message.message_id,
-                chat_id=user_message.chat.id,
-                ts=user_message.date,
-                topic_id=topic_id
-            ),
+            msg,
             types.Message(
                 role="assistant",
                 content=assistant_message.text,
                 message_id=assistant_message.message_id,
                 chat_id=assistant_message.chat.id,
                 ts=assistant_message.date + 1,
-                topic_id=topic_id
-            )
+                topic_id=topic_id,
+            ),
         ]
 
         await self.storage.append_message(topic_id, messages)
@@ -44,7 +52,9 @@ class Topic:
 
         await self.storage.remove_messages(topic_id, message_ids)
 
-    async def get_topic(self, topic_id: int, fetch_messages: bool = False) -> [types.Topic | None]:
+    async def get_topic(
+        self, topic_id: int, fetch_messages: bool = False
+    ) -> [types.Topic | None]:
         topic = await self.storage.get_topic(topic_id)
         if topic is None:
             return None
@@ -86,11 +96,12 @@ class Topic:
         await self.storage.update_topic(topic)
 
     async def new_topic(
-            self, title: str,
-            chat_id: int,
-            user_id: int,
-            messages: list = None,
-            generate_title: bool = True
+        self,
+        title: str,
+        chat_id: int,
+        user_id: int,
+        messages: list = None,
+        generate_title: bool = True,
     ) -> types.Topic:
         label = str(uuid.uuid4()).replace("-", "")
 
@@ -100,7 +111,7 @@ class Topic:
             chat_id=chat_id,
             title=title,
             generate_title=generate_title,
-            label=label
+            label=label,
         )
         if messages:
             topic.messages = messages
@@ -126,3 +137,36 @@ class Topic:
 
         await self.storage.delete_topic(topic_id)
         await self.storage.remove_message_by_topic(topic_id)
+
+    async def save_or_update_message_holder(
+        self, topic_id: int, user_msg: tg_types.Message, reply_id: int
+    ):
+        holder = await self.storage.get_message_holder(
+            user_msg.from_user.id, user_msg.chat.id
+        )
+        message = types.MessageHolder(
+            content=user_msg.text,
+            message_id=user_msg.message_id,
+            user_id=user_msg.from_user.id,
+            chat_id=user_msg.chat.id,
+            topic_id=topic_id,
+            reply_id=reply_id,
+            message_type=0 if user_msg.content_type == "text" else 1,
+        )
+        if user_msg.content_type == "photo":
+            message.media_url = user_msg.text
+            message.content = user_msg.caption
+
+        if holder:
+            await self.storage.update_message_holder(message)
+        else:
+            await self.storage.save_message_holder(message)
+
+    async def get_message_holder(
+        self, user_id: int, chat_id: int, topic_id: int
+    ) -> [types.MessageHolder | None]:
+        holder = await self.storage.get_message_holder(user_id, chat_id)
+        if holder and holder.topic_id == topic_id:
+            return holder
+
+        return None

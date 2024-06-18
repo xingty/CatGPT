@@ -8,25 +8,53 @@ from . import storage
 
 import json
 import random
+import enum
+
+
+model_mapping = {
+    "gpt-4o": ["text", "photo"],
+    "gpt-4-1106-preview": ["text", "photo"],
+    "gpt-4-0125-preview": ["text", "photo"],
+    "gpt-4-turbo-preview": ["text", "photo"],
+    "gpt-4-turbo-2024-04-09": ["text", "photo"],
+    "gpt-4-turbo": ["text", "photo"],
+    "gpt-4": ["text"],
+    "gpt-3.5-turbo": ["text"],
+    "gpt-3.5-turbo-0301": ["text"],
+    "gpt-4-0613": ["text"],
+}
+
+
+class Provider(enum.Enum):
+    OPENAI = "openai"
+    GEMINI = "chatgpt"
+    QWEN = "qwen"
+
+
+class MessageType(enum.Enum):
+    TEXT = 0
+    PHOTO = 1
+    AUDIO = 2
 
 
 class Endpoint:
 
     def __init__(
-            self,
-            name: str,
-            api_url: str,
-            secret_key: str,
-            models: list[str],
-            provider: str = "openai",
-            default_model: str = None,
-            default_endpoint: bool = False,
-            generate_title: bool = True,
+        self,
+        name: str,
+        api_url: str,
+        secret_key: str,
+        models: list[str],
+        provider: str = "openai",
+        default_model: str = None,
+        default_endpoint: bool = False,
+        generate_title: bool = True,
     ):
         assert len(name) > 0, "endpoint name can't be empty"
         assert len(api_url) > 0, "api url can't be empty"
         assert len(secret_key) > 0, "secret key can't be empty"
         assert len(models) > 0, "models can't be empty"
+        assert provider in ["openai", "chatgpt", "qwen"], "provider not supported"
 
         self.name = name
         self.api_url = api_url
@@ -34,10 +62,14 @@ class Endpoint:
         self.models = models
         self.generate_title = generate_title
         self.default_endpoint = default_endpoint
-        self.provider = provider
+        self.provider = Provider[provider.upper()]
         self.default_model = default_model
         if not default_model:
             self.default_model = models[0]
+
+    @staticmethod
+    def is_support(model, message_type):
+        return message_type in model_mapping.get(model, [])
 
     def __str__(self):
         return f"""
@@ -100,19 +132,19 @@ bot_name = None
 
 async def init_configuration(options):
     def load_config():
-        with open(options.config, 'r') as f:
+        with open(options.config, "r") as f:
             return json.load(f)
 
     c = load_config()
-    assert 'tg_token' in c, "tg_token is required"
-    assert 'access_key' in c, "access_key is required"
-    assert 'endpoints' in c, "endpoints is required"
+    assert "tg_token" in c, "tg_token is required"
+    assert "access_key" in c, "access_key is required"
+    assert "endpoints" in c, "endpoints is required"
 
-    config.access_key = c['access_key']
-    config.proxy_url = c.get('proxy', None)
+    config.access_key = c["access_key"]
+    config.proxy_url = c.get("proxy", None)
     config.share_info = c.get("share", None)
 
-    endpoints = c.get('endpoints', [])
+    endpoints = c.get("endpoints", [])
     assert len(endpoints) > 0, "endpoints is required"
 
     list_endpoints = []
@@ -123,7 +155,7 @@ async def init_configuration(options):
 
     global bot
     bot = AsyncTeleBot(
-        token=c['tg_token'],
+        token=c["tg_token"],
         disable_web_page_preview=True,
     )
 
@@ -131,7 +163,11 @@ async def init_configuration(options):
 async def init_datasource(options):
     global topic
     global profiles
-    from .storage.sqlite3_session_storage import Sqlite3Datasource, Sqlite3TopicStorage, Sqlite3ProfileStorage
+    from .storage.sqlite3_session_storage import (
+        Sqlite3Datasource,
+        Sqlite3TopicStorage,
+        Sqlite3ProfileStorage,
+    )
 
     schema_file = Path(__file__).parent.joinpath("data").joinpath("session_schema.sql")
 

@@ -30,36 +30,49 @@ async def handle_revoke(message: Message, bot: AsyncTeleBot):
             break
 
     if len(revoke_messages) != 2:
-        await bot.reply_to(message, "Could not find any message.py in current conversation")
+        await bot.reply_to(
+            message, "Could not find any message.py in current conversation"
+        )
         return
 
-    context = f'{message.message_id}:{message.chat.id}:{message.from_user.id}'
+    context = f"{message.message_id}:{message.chat.id}:{message.from_user.id}"
     keyboard = [
         [
-            InlineKeyboardButton("Yes", callback_data=f'{action["name"]}:yes:{context}'),
+            InlineKeyboardButton(
+                "Yes", callback_data=f'{action["name"]}:yes:{context}'
+            ),
             InlineKeyboardButton("No", callback_data=f'{action["name"]}:no:{context}'),
         ],
     ]
 
-    content = ''
+    content = ""
     for m in revoke_messages:
-        content += f'### {m.role}\n{m.content}\n\n'
+        content += f"### {m.role}\n{m.content}\n\n"
 
-    content = escape(f'Are you sure? This operation will revoke the messages below:\n\n{content}')
+    content = escape(
+        f"Are you sure? This operation will revoke the messages below:\n\n{content}"
+    )
     if len(content) > 4096:
-        content = content[0:4093] + '...'
+        content = content[0:4093] + "..."
 
     await bot.send_message(
         chat_id=message.chat.id,
         text=escape(content),
         parse_mode="MarkdownV2",
-        reply_markup=InlineKeyboardMarkup(keyboard)
+        reply_markup=InlineKeyboardMarkup(keyboard),
     )
 
 
-async def do_revoke(bot: AsyncTeleBot, operation: str, msg_ids: list[int], chat_id: int, uid: int, message: Message):
+async def do_revoke(
+    bot: AsyncTeleBot,
+    operation: str,
+    msg_ids: list[int],
+    chat_id: int,
+    uid: int,
+    message: Message,
+):
     message_id = msg_ids[0]
-    if operation == 'no':
+    if operation == "no":
         await bot.delete_messages(chat_id, [message_id, message.message_id])
         return
 
@@ -68,7 +81,7 @@ async def do_revoke(bot: AsyncTeleBot, operation: str, msg_ids: list[int], chat_
         await bot.send_message(
             chat_id=chat_id,
             text="Conversation not found",
-            reply_to_message_id=message_id
+            reply_to_message_id=message_id,
         )
         return
 
@@ -84,7 +97,7 @@ async def do_revoke(bot: AsyncTeleBot, operation: str, msg_ids: list[int], chat_
         await bot.send_message(
             chat_id=chat_id,
             text="Could not find any message.py in current conversation",
-            reply_to_message_id=message_id
+            reply_to_message_id=message_id,
         )
         return
 
@@ -93,15 +106,13 @@ async def do_revoke(bot: AsyncTeleBot, operation: str, msg_ids: list[int], chat_
     await bot.delete_messages(chat_id, revoke_message_ids)
 
     await bot.send_message(
-        chat_id=chat_id,
-        text="Messages revoked",
-        reply_to_message_id=message_id
+        chat_id=chat_id, text="Messages revoked", reply_to_message_id=message_id
     )
 
 
 def register(bot: AsyncTeleBot, decorator, action_provider):
     handler = decorator(handle_revoke)
-    bot.register_message_handler(handler, pass_bot=True, commands=[action['name']])
+    bot.register_message_handler(handler, pass_bot=True, commands=[action["name"]])
 
     action_provider[action["name"]] = do_revoke
 
@@ -109,7 +120,7 @@ def register(bot: AsyncTeleBot, decorator, action_provider):
 
 
 action = {
-    "name": 'revoke',
-    "description": 'revoke message.py',
+    "name": "revoke",
+    "description": "revoke message.py",
     "order": 70,
 }

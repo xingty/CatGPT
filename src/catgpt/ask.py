@@ -1,69 +1,36 @@
 from openai import AsyncOpenAI
 
-from .utils.prompt import get_system_prompt
-from .context import Endpoint
+from .storage import types
+from .context import Endpoint, Provider
+
+from .provider import oai
 
 
-def inject_system_prompt_if_need(messages: list, model: str):
-    if messages[0].get("role") == "system":
-        return
+def message2payload(endpoint: Endpoint, messages: list[types.Message]) -> list[dict]:
+    if endpoint.provider == Provider.OPENAI:
+        return oai.message2payload(messages)
 
-    prompt = get_system_prompt(model)
-    if prompt:
-        messages.insert(0, {
-            "role": "system",
-            "content": prompt
-        })
+    raise NotImplementedError
 
 
 async def ask_stream(endpoint: Endpoint, body: dict):
-    client = AsyncOpenAI(
-        base_url=endpoint.api_url,
-        api_key=endpoint.secret_key
-    )
+    if endpoint.provider == Provider.OPENAI:
+        return oai.ask_stream(endpoint, body)
 
-    messages = body.get('messages', [])
-    model = body.get('model')
-    if model not in endpoint.models:
-        model = endpoint.default_model
-    inject_system_prompt_if_need(messages, model)
-    assert len(messages) > 0, "messages should not be empty"
-    response = await client.chat.completions.create(
-        model=model,
-        messages=messages,
-        temperature=body.get('temperature', 0.6),
-        stream=True,
-        presence_penalty=body.get('presence_penalty', 0.0),
-        frequency_penalty=body.get('frequency_penalty', 0.0),
-        top_p=body.get('top_p', 1),
-    )
-
-    async for chunk in response:
-        if len(chunk.choices) == 0:
-            continue
-
-        choice = chunk.choices[0]
-        yield {
-            "role": choice.delta.role,
-            "content": choice.delta.content,
-            "finished": choice.finish_reason
-        }
+    raise Exception("Provider not supported")
 
 
 async def ask(endpoint: Endpoint, body: dict):
-    client = AsyncOpenAI(
-        base_url=endpoint.api_url,
-        api_key=endpoint.secret_key
-    )
+    client = AsyncOpenAI(base_url=endpoint.api_url, api_key=endpoint.secret_key)
 
     response = await client.chat.completions.create(
-        model=endpoint.default_model or 'gpt-3.5-turbo',
-        messages=body.get('messages'),
-        temperature=body.get('temperature', 0.7),
+        model=endpoint.default_model or "gpt-3.5-turbo",
+        messages=body.get("messages"),
+        temperature=body.get("temperature", 0.7),
         stream=False,
-        presence_penalty=body.get('presence_penalty', 0.0),
-        frequency_penalty=body.get('frequency_penalty', 0.0),
-        top_p=body.get('top_p', 1),
+        presence_penalty=body.get("presence_penalty", 0.0),
+        frequency_penalty=body.get("frequency_penalty", 0.0),
+        top_p=body.get("top_p", 1),
     )
 
     return response.choices[0].message.content

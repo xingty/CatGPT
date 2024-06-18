@@ -14,11 +14,13 @@ PROXIES = config.proxy_url
 async def get_github_issue(owner, repo, token, label):
     url = f"https://api.github.com/repos/{owner}/{repo}/issues"
     headers = HEADERS.copy()
-    headers['Authorization'] = f'Bearer {token}'
+    headers["Authorization"] = f"Bearer {token}"
 
-    params = {'labels': label, 'state': 'open'}
+    params = {"labels": label, "state": "open"}
     async with aiohttp.ClientSession() as session:
-        async with session.get(url, headers=headers, params=params, proxy=PROXIES) as response:
+        async with session.get(
+            url, headers=headers, params=params, proxy=PROXIES
+        ) as response:
             if not response.ok:
                 raise Exception(f"Failed to search issues: {response.text}")
 
@@ -29,15 +31,13 @@ async def get_github_issue(owner, repo, token, label):
 async def create_github_issue(owner, repo, token, title, body, label):
     url = f"https://api.github.com/repos/{owner}/{repo}/issues"
     headers = HEADERS.copy()
-    headers['Authorization'] = f'Bearer {token}'
-    data = {
-        'title': title,
-        'body': body,
-        'labels': [label]
-    }
+    headers["Authorization"] = f"Bearer {token}"
+    data = {"title": title, "body": body, "labels": [label]}
 
     async with aiohttp.ClientSession() as session:
-        async with session.post(url, headers=headers, json=data, proxy=PROXIES) as response:
+        async with session.post(
+            url, headers=headers, json=data, proxy=PROXIES
+        ) as response:
             if not response.ok:
                 raise Exception(f"Failed to create issue: {response.text}")
 
@@ -48,14 +48,13 @@ async def update_github_issue(owner, repo, token, issue_number, title, body):
     """更新现有的GitHub Issue"""
     url = f"https://api.github.com/repos/{owner}/{repo}/issues/{issue_number}"
     headers = HEADERS.copy()
-    headers['Authorization'] = f'Bearer {token}'
-    data = {
-        'title': title,
-        'body': body
-    }
+    headers["Authorization"] = f"Bearer {token}"
+    data = {"title": title, "body": body}
 
     async with aiohttp.ClientSession() as session:
-        async with session.patch(url, headers=headers, json=data, proxy=PROXIES) as response:
+        async with session.patch(
+            url, headers=headers, json=data, proxy=PROXIES
+        ) as response:
             if not response.ok:
                 raise Exception(f"Failed to update issue: {response.text}")
 
@@ -65,8 +64,10 @@ async def update_github_issue(owner, repo, token, issue_number, title, body):
 async def create_or_update_issue(owner, repo, token, title, body, label):
     issue = await get_github_issue(owner, repo, token, label)
     if issue:
-        issue = await update_github_issue(owner, repo, token, issue['number'], title, body)
+        issue = await update_github_issue(
+            owner, repo, token, issue["number"], title, body
+        )
     else:
         issue = await create_github_issue(owner, repo, token, title, body, label)
 
-    return issue.get('html_url')
+    return issue.get("html_url")
