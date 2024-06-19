@@ -57,6 +57,7 @@ async def handle_models(message: Message, bot: AsyncTeleBot):
         message_id=message.message_id,
         chat_id=message.chat.id,
         uid=uid,
+        thread_id=message.message_thread_id
     )
 
 
@@ -67,6 +68,7 @@ async def display_models(
     message_id: int,
     chat_id: int,
     uid: int,
+    thread_id: int = None,
 ):
     context = f"{message_id}:{chat_id}:{uid}"
     keyboard = []
@@ -95,6 +97,7 @@ async def display_models(
         text=escape(msg_text),
         parse_mode="MarkdownV2",
         reply_markup=InlineKeyboardMarkup(keyboard),
+        message_thread_id=thread_id,
     )
 
 
@@ -118,6 +121,7 @@ async def do_model_change(
         msg_ids=msg_ids + [message.message_id],
         chat_id=chat_id,
         uid=uid,
+        thread_id=message.message_thread_id
     )
 
 
@@ -128,6 +132,7 @@ async def _do_model_change(
     msg_ids: list[int],
     chat_id: int,
     uid: int,
+    thread_id: int = None,
 ):
     if profile.model != model:
         message_id = msg_ids[0]
@@ -138,6 +143,7 @@ async def _do_model_change(
                 reply_to_message_id=message_id,
                 parse_mode="MarkdownV2",
                 text=escape(f"endpoint not found"),
+                message_thread_id=thread_id
             )
             return
 
@@ -147,6 +153,7 @@ async def _do_model_change(
                 reply_to_message_id=message_id,
                 parse_mode="MarkdownV2",
                 text=escape(f"current endpoint does not support the model `{model}`"),
+                message_thread_id=thread_id
             )
             return
 
@@ -157,6 +164,7 @@ async def _do_model_change(
         chat_id=chat_id,
         parse_mode="MarkdownV2",
         text=escape(f"current model: `{model}`"),
+        message_thread_id=thread_id
     )
     await bot.delete_messages(chat_id, msg_ids)
 

@@ -21,6 +21,7 @@ async def send_message(
     chat_id: int,
     reply_id: int,
     text: str,
+    thread_id: int = None,
     parse_mode: str = "MarkdownV2",
     disable_preview: bool = True,
 ):
@@ -33,6 +34,7 @@ async def send_message(
                 reply_to_message_id=reply_id,
                 parse_mode=parse_mode,
                 disable_web_page_preview=disable_preview,
+                message_thread_id=thread_id
             )
             break
         except RequestTimeout as e:
@@ -50,7 +52,7 @@ def permission_check(func):
             await func(message, bot)
         else:
             text = "Please enter a valid key to use this bot. You can do this by typing '/key key'."
-            await send_message(bot, message.chat.id, message.message_id, text)
+            await send_message(bot, message.chat.id, message.message_id, text, message.message_thread_id)
 
     return wrapper
 
@@ -114,6 +116,7 @@ async def show_conversation(
     bot: AsyncTeleBot,
     convo: types.Topic,
     reply_msg_id: int = None,
+    thread_id: int = None,
 ):
     messages: list[types.Message] = convo.messages or []
     messages = [
@@ -125,6 +128,7 @@ async def show_conversation(
             chat_id=chat_id,
             text=escape(f"Current topic: **{convo.title}**\n"),
             parse_mode="MarkdownV2",
+            message_thread_id=thread_id
         )
         return
 
@@ -146,6 +150,7 @@ async def show_conversation(
             disable_web_page_preview=True,
             reply_to_message_id=last_message_id,
             reply_markup=InlineKeyboardMarkup(keyboard),
+            message_thread_id=thread_id
         )
         last_message_id = reply_msg.message_id
 
@@ -213,4 +218,5 @@ async def send_file(bot: AsyncTeleBot, message: Message, convo: types.Topic):
     await bot.send_document(
         chat_id=message.chat.id,
         document=file,
+        message_thread_id=message.message_thread_id
     )

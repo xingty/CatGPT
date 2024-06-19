@@ -14,6 +14,7 @@ async def show_conversation_list(
     chat_id: int,
     bot: AsyncTeleBot,
     chat_type: str,
+    thread_id: int = None,
     edit_msg_id: int = -1,
 ):
     profile = await profiles.load(uid)
@@ -45,11 +46,13 @@ async def show_conversation_list(
             ]
         )
 
+    # update list
     if edit_msg_id <= 0:
         await bot.send_message(
             chat_id=chat_id,
             text=text,
             reply_markup=InlineKeyboardMarkup(keyboard),
+            message_thread_id=thread_id
         )
     else:
         await bot.edit_message_text(
@@ -63,7 +66,7 @@ async def show_conversation_list(
 async def handle_convo(message: Message, bot: AsyncTeleBot):
     uid = message.from_user.id
     await show_conversation_list(
-        uid, message.message_id, message.chat.id, bot, message.chat.type
+        uid, message.message_id, message.chat.id, bot, message.chat.type, message.message_thread_id
     )
 
 
@@ -94,6 +97,7 @@ async def do_convo_change(
             chat_id=chat_id,
             parse_mode="MarkdownV2",
             text=escape(f"Switched to topic `{convo.title}`"),
+            message_thread_id=message.message_thread_id
         )
     elif real_op == "sr":  # share this conversation to a share provider
         html_url = await share(convo)
@@ -102,6 +106,7 @@ async def do_convo_change(
             parse_mode="MarkdownV2",
             text=escape(f"Share link: {html_url}"),
             disable_web_page_preview=False,
+            message_thread_id=message.message_thread_id
         )
     elif real_op == "dl":
         await send_file(bot, message, convo)
@@ -114,6 +119,7 @@ async def do_convo_change(
             bot=bot,
             chat_type=message.chat.type,
             edit_msg_id=msg_ids[1],
+            thread_id=message.message_thread_id
         )
 
     elif real_op == "c":  # cancel

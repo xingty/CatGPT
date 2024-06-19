@@ -28,6 +28,7 @@ async def handle_conversation(message: Message, bot: AsyncTeleBot):
             bot=bot,
             convo=convo,
             reply_msg_id=message.message_id,
+            thread_id=message.message_thread_id
         )
         return
 
@@ -45,6 +46,7 @@ async def handle_conversation(message: Message, bot: AsyncTeleBot):
             reply_to_message_id=message.message_id,
             parse_mode="MarkdownV2",
             text=escape(f"topic's title has been updated to `{instruction}`"),
+            message_thread_id=message.message_thread_id
         )
 
 
@@ -77,6 +79,7 @@ async def handle_share(
             reply_to_message_id=message_id,
             parse_mode="MarkdownV2",
             text=escape(f"topic not found"),
+            message_thread_id=message.message_thread_id
         )
         return
 
@@ -86,6 +89,7 @@ async def handle_share(
             reply_to_message_id=message_id,
             parse_mode="MarkdownV2",
             text=escape(f"Please set share info in config"),
+            message_thread_id=message.message_thread_id
         )
         return
 
@@ -106,6 +110,7 @@ async def handle_share(
         parse_mode="MarkdownV2",
         text=escape(f"Share this topic `<{convo.title}>` to github?"),
         reply_markup=InlineKeyboardMarkup(buttons),
+        message_thread_id=message.message_thread_id
     )
 
 
@@ -134,6 +139,7 @@ async def _do_share(convo: types.Topic, bot: AsyncTeleBot, message: Message):
             parse_mode="MarkdownV2",
             text=escape(f"Title: {convo.title}\nShare link: {html_url}"),
             disable_web_page_preview=False,
+            message_thread_id=message.message_thread_id
         )
     except Exception as e:
         await bot.send_message(
@@ -141,6 +147,7 @@ async def _do_share(convo: types.Topic, bot: AsyncTeleBot, message: Message):
             parse_mode="MarkdownV2",
             text=str(e),
             disable_web_page_preview=True,
+            message_thread_id=message.message_thread_id
         )
 
 

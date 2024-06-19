@@ -60,6 +60,7 @@ async def handle_revoke(message: Message, bot: AsyncTeleBot):
         text=escape(content),
         parse_mode="MarkdownV2",
         reply_markup=InlineKeyboardMarkup(keyboard),
+        message_thread_id=message.message_thread_id,
     )
 
 
@@ -82,6 +83,7 @@ async def do_revoke(
             chat_id=chat_id,
             text="Conversation not found",
             reply_to_message_id=message_id,
+            message_thread_id=message.message_thread_id
         )
         return
 
@@ -98,6 +100,7 @@ async def do_revoke(
             chat_id=chat_id,
             text="Could not find any message.py in current conversation",
             reply_to_message_id=message_id,
+            message_thread_id=message.message_thread_id
         )
         return
 
@@ -106,7 +109,10 @@ async def do_revoke(
     await bot.delete_messages(chat_id, revoke_message_ids)
 
     await bot.send_message(
-        chat_id=chat_id, text="Messages revoked", reply_to_message_id=message_id
+        chat_id=chat_id,
+        text="Messages revoked",
+        reply_to_message_id=message_id,
+        message_thread_id=message.message_thread_id,
     )
 
 

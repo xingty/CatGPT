@@ -48,6 +48,7 @@ async def handle_endpoints(message: Message, bot: AsyncTeleBot):
         chat_id=message.chat.id,
         text=escape(text),
         reply_markup=InlineKeyboardMarkup(keyboard),
+        message_thread_id=message.message_thread_id
     )
 
 
@@ -71,6 +72,7 @@ async def do_endpoint_change(
             reply_to_message_id=message_id,
             parse_mode="MarkdownV2",
             text=escape(f"endpoint not found"),
+            message_thread_id=message.message_thread_id
         )
         return
 
@@ -87,6 +89,7 @@ async def do_endpoint_change(
         reply_to_message_id=message_id,
         parse_mode="MarkdownV2",
         text=escape(f"current endpoint: `{operation}`"),
+        message_thread_id=message.message_thread_id
     )
     await bot.delete_messages(chat_id, [message_id, message.message_id])
 

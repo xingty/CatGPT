@@ -151,7 +151,7 @@ async def do_reply(
         if (time.time() - start > timeout and len(buffered) >= 18) or finished:
             start = time.time()
             try:
-                message_text = escape(text + buffered)
+                message_text = escape(f"*{endpoint.name}*:\n{text}{buffered}")
                 if len(message_text) > MAX_TEXT_LENGTH:
                     text_overflow = True
                     continue
@@ -225,6 +225,17 @@ async def do_generate_title(convo: types.Topic, messages: list, uid: int, text: 
     await topic.update_topic(convo)
 
 
+async def handle_document(message: Message, bot: AsyncTeleBot):
+    print(message.content_type)
+    print(message.text)
+    print(message.caption)
+    print(message.document)
+
+    file = await bot.get_file(message.document.file_id)
+    content = await bot.download_file(file.file_path)
+    print(content)
+
+
 def message_check(func):
     async def wrapper(message: Message, bot: AsyncTeleBot):
         if message.chat.type in ["group", "supergroup", "gigagroup", "channel"]:
@@ -242,3 +253,4 @@ def register(bot: AsyncTeleBot, decorator, provider) -> None:
         handler, regexp=r"^(?!/)", pass_bot=True, content_types=["text"]
     )
     bot.register_message_handler(handler, pass_bot=True, content_types=["photo"])
+    bot.register_message_handler(handle_document, pass_bot=True, content_types=["document"])

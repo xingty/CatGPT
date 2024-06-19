@@ -20,6 +20,7 @@ async def handle_new_topic(message: Message, bot: AsyncTeleBot) -> None:
         uid=uid,
         chat_type=message.chat.type,
         title=text,
+        thread_id=message.message_thread_id,
     )
 
 
@@ -45,6 +46,7 @@ async def create_convo(
     uid: int,
     chat_type: str,
     title: str = None,
+    thread_id: int = None,
 ) -> None:
     profile = await profiles.load(uid)
     prompt = get_prompt(profiles.get_prompt(profile.prompt))
@@ -62,6 +64,7 @@ async def create_convo(
         text=escape(text),
         reply_to_message_id=msg_id,
         parse_mode="MarkdownV2",
+        message_thread_id=thread_id
     )
 
 

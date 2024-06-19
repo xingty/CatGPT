@@ -36,6 +36,7 @@ async def handle_clear(message: Message, bot: AsyncTeleBot) -> None:
         chat_id=message.chat.id,
         text="Chat history in current window will be cleared, are you sure?",
         reply_markup=reply_markup,
+        message_thread_id=message.message_thread_id,
     )
 
 
@@ -67,6 +68,7 @@ async def do_clear(
         text=escape("`Context cleared.`"),
         reply_to_message_id=message_id,
         parse_mode="MarkdownV2",
+        message_thread_id=message.message_thread_id,
     )
     await bot.delete_messages(chat_id, [message_id, message.message_id])
 
