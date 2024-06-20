@@ -3,7 +3,7 @@ from telebot.asyncio_helper import ApiTelegramException
 from telebot.types import Message
 
 from ..context import profiles, config, get_bot_name, topic
-from ..context import Endpoint, MessageType
+from ..types import Endpoint, MessageType
 from ..utils.text import get_timeout_from_text, MAX_TEXT_LENGTH
 from . import create_convo_and_update_profile
 from .. import ask
@@ -48,9 +48,8 @@ async def handle_message(message: Message, bot: AsyncTeleBot) -> None:
 
     uid = message.from_user.id
     chat_id = message.chat.id
-    profile = await profiles.load(uid)
-
-    convo_id = profile.get_conversation_id(message.chat.type)
+    profile = await profiles.load(uid, chat_id, message.message_thread_id)
+    convo_id = profile.topic_id
 
     endpoint: Endpoint = config.get_endpoint(profile.endpoint)
     if endpoint is None:

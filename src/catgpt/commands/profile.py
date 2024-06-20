@@ -27,7 +27,8 @@ async def handle_profiles(message: Message, bot: AsyncTeleBot):
             ]
         )
 
-    profile = await profiles.load(message.from_user.id)
+    uid = message.from_user.id
+    profile = await profiles.load(uid, message.chat.id, message.message_thread_id)
     state_text = await get_profile_text(profile, message.chat.type)
 
     await bot.send_message(
@@ -52,8 +53,10 @@ async def do_profile_change(
         await bot.delete_messages(chat_id, [message_id, message.message_id])
         return
 
-    await profiles.update_prompt(uid, operation)
-    profile = await profiles.load(uid)
+    # await profiles.update_prompt(uid, chat_id, message.message_thread_id, operation)
+    profile = await profiles.load(uid, chat_id, message.message_thread_id)
+    profile.prompt = operation
+    await profiles.update(uid, chat_id, message.message_thread_id, profile)
     text = await get_profile_text(profile, message.chat.type)
 
     await bot.send_message(

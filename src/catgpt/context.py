@@ -2,83 +2,13 @@ from telebot.async_telebot import AsyncTeleBot, asyncio_helper
 
 from pathlib import Path
 
-from .user_profile import UserProfile
+from .user_profile import UserProfile, Users
 from .topic import Topic
 from . import storage
+from .types import Endpoint
 
 import json
 import random
-import enum
-
-
-model_mapping = {
-    "gpt-4o": ["text", "photo"],
-    "gpt-4-1106-preview": ["text", "photo"],
-    "gpt-4-0125-preview": ["text", "photo"],
-    "gpt-4-turbo-preview": ["text", "photo"],
-    "gpt-4-turbo-2024-04-09": ["text", "photo"],
-    "gpt-4-turbo": ["text", "photo"],
-    "gpt-4": ["text"],
-    "gpt-3.5-turbo": ["text"],
-    "gpt-3.5-turbo-0301": ["text"],
-    "gpt-4-0613": ["text"],
-}
-
-
-class Provider(enum.Enum):
-    OPENAI = "openai"
-    GEMINI = "chatgpt"
-    QWEN = "qwen"
-
-
-class MessageType(enum.Enum):
-    TEXT = 0
-    PHOTO = 1
-    AUDIO = 2
-
-
-class Endpoint:
-
-    def __init__(
-        self,
-        name: str,
-        api_url: str,
-        secret_key: str,
-        models: list[str],
-        provider: str = "openai",
-        default_model: str = None,
-        default_endpoint: bool = False,
-        generate_title: bool = True,
-    ):
-        assert len(name) > 0, "endpoint name can't be empty"
-        assert len(api_url) > 0, "api url can't be empty"
-        assert len(secret_key) > 0, "secret key can't be empty"
-        assert len(models) > 0, "models can't be empty"
-        assert provider in ["openai", "chatgpt", "qwen"], "provider not supported"
-
-        self.name = name
-        self.api_url = api_url
-        self.secret_key = secret_key
-        self.models = models
-        self.generate_title = generate_title
-        self.default_endpoint = default_endpoint
-        self.provider = Provider[provider.upper()]
-        self.default_model = default_model
-        if not default_model:
-            self.default_model = models[0]
-
-    @staticmethod
-    def is_support(model, message_type):
-        return message_type in model_mapping.get(model, [])
-
-    def __str__(self):
-        return f"""
-        Endpoint(
-            name={self.name}, 
-            api_url={self.api_url}, 
-            default_model={self.default_model}, 
-            models={self.models}
-        )"""
 
 
 class Configuration:
@@ -125,6 +55,7 @@ class Configuration:
 config = Configuration()
 
 profiles: UserProfile | None = None
+users: Users | None = None
 topic: Topic | None = None
 bot: AsyncTeleBot | None = None
 bot_name = None
@@ -163,10 +94,12 @@ async def init_configuration(options):
 async def init_datasource(options):
     global topic
     global profiles
+    global users
     from .storage.sqlite3_session_storage import (
         Sqlite3Datasource,
         Sqlite3TopicStorage,
         Sqlite3ProfileStorage,
+        Sqlite3UserStorage,
     )
 
     schema_file = Path(__file__).parent.joinpath("data").joinpath("session_schema.sql")
@@ -180,6 +113,8 @@ async def init_datasource(options):
     f_preset = Path(options.preset or "presets.json")
 
     profiles = UserProfile(profile_storage, f_preset)
+    user_storage = Sqlite3UserStorage()
+    users = Users(user_storage)
 
 
 async def init(options):

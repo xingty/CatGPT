@@ -65,8 +65,8 @@ class Topic:
 
         return topic
 
-    async def list_topics(self, uid: int, chat_id: int) -> list[types.Topic]:
-        topics = await self.storage.list_topics(uid, chat_id)
+    async def list_topics(self, uid: int, chat_id: int, thread_id: int) -> list[types.Topic]:
+        topics = await self.storage.list_topics(uid, chat_id, thread_id)
         topic_ids = [topic.tid for topic in topics]
         messages = await self.get_messages(topic_ids)
 
@@ -102,6 +102,7 @@ class Topic:
         user_id: int,
         messages: list = None,
         generate_title: bool = True,
+        thread_id: int = 0,
     ) -> types.Topic:
         label = str(uuid.uuid4()).replace("-", "")
 
@@ -112,6 +113,7 @@ class Topic:
             title=title,
             generate_title=generate_title,
             label=label,
+            thread_id=thread_id,
         )
         if messages:
             topic.messages = messages

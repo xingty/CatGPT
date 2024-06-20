@@ -14,11 +14,11 @@ async def show_conversation_list(
     chat_id: int,
     bot: AsyncTeleBot,
     chat_type: str,
-    thread_id: int = None,
+    thread_id: int = 0,
     edit_msg_id: int = -1,
 ):
-    profile = await profiles.load(uid)
-    convo_id = profile.get_conversation_id(chat_type)
+    profile = await profiles.load(uid, chat_id, thread_id)
+    convo_id = profile.topic_id
 
     current_convo = await topic.get_topic(convo_id)
     context = f"{msg_id}:{chat_id}:{uid}"
@@ -27,7 +27,7 @@ async def show_conversation_list(
 
     title = current_convo.title if current_convo else "None"
     text = f"Current topic: `{title}` \n\nlist of topics:\n"
-    conversations = await topic.list_topics(int(uid), chat_id)
+    conversations = await topic.list_topics(int(uid), chat_id, thread_id)
     for index, convo in enumerate(conversations):
         callback_data = f"list_tips:{convo.tid}:{context}"
         if len(items) == 5:
@@ -92,7 +92,7 @@ async def do_convo_change(
         return
 
     elif real_op == "s":  # switch to this conversation
-        await profiles.update_conversation_id(uid, message.chat.type, conversation_id)
+        await profiles.update_conversation_id(uid, chat_id, message.message_thread_id, conversation_id)
         await bot.send_message(
             chat_id=chat_id,
             parse_mode="MarkdownV2",

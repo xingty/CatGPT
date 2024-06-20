@@ -26,7 +26,12 @@ async def handle_new_topic(message: Message, bot: AsyncTeleBot) -> None:
 
 @tx.transactional(tx_type="write")
 async def create_topic_and_update_profile(
-    chat_id: int, uid: int, chat_type: str, title: str = None, messages: list = None
+        chat_id: int,
+        uid: int,
+        chat_type: str,
+        thread_id: int = 0,
+        title: str = None,
+        messages: list = None,
 ):
     convo = await topic.new_topic(
         title=title,
@@ -34,8 +39,9 @@ async def create_topic_and_update_profile(
         user_id=uid,
         messages=messages,
         generate_title=title is None or len(title) == 0,
+        thread_id=thread_id
     )
-    await profiles.update_conversation_id(uid, chat_type, convo.tid)
+    await profiles.update_conversation_id(uid, chat_id, convo.tid)
     return convo
 
 
@@ -48,14 +54,14 @@ async def create_convo(
     title: str = None,
     thread_id: int = None,
 ) -> None:
-    profile = await profiles.load(uid)
+    profile = await profiles.load(uid, chat_id, thread_id)
     prompt = get_prompt(profiles.get_prompt(profile.prompt))
     messages = [prompt] if prompt else None
     convo = await create_topic_and_update_profile(
-        chat_id=chat_id, uid=uid, chat_type=chat_type, title=title, messages=messages
+        chat_id=chat_id, uid=uid, chat_type=chat_type, thread_id=thread_id, title=title, messages=messages
     )
 
-    profile.set_conversation_id(convo.tid, chat_type)
+    profile.topic_id = convo.tid
     text = await get_profile_text(profile, chat_type)
     text = "A new topic has been created.\n" + text
 

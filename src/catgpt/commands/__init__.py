@@ -1,5 +1,6 @@
 import asyncio
 import importlib
+import logging
 from pathlib import Path
 from io import BytesIO
 
@@ -8,22 +9,23 @@ from telebot.async_telebot import AsyncTeleBot
 from telebot.types import BotCommand
 from telebot.asyncio_helper import RequestTimeout
 
-from ..context import profiles, config, topic
+from ..context import profiles, config, topic, users
 from ..utils.md2tgmd import escape
 from ..utils.text import messages_to_segments, decode_message_id
 from ..utils.prompt import get_prompt
 from ..share.github import create_or_update_issue
-from ..storage import types
+from ..storage import types, tx
+from ..types import ChatType
 
 
 async def send_message(
-    bot: AsyncTeleBot,
-    chat_id: int,
-    reply_id: int,
-    text: str,
-    thread_id: int = None,
-    parse_mode: str = "MarkdownV2",
-    disable_preview: bool = True,
+        bot: AsyncTeleBot,
+        chat_id: int,
+        reply_id: int,
+        text: str,
+        thread_id: int = None,
+        parse_mode: str = "MarkdownV2",
+        disable_preview: bool = True,
 ):
     retry_counter = 0
     while retry_counter < 3:
@@ -45,14 +47,45 @@ async def send_message(
             await asyncio.sleep(timeout)
 
 
+async def new_profile(message: Message):
+    endpoint = config.get_default_endpoint()
+    uid = message.from_user.id
+
+    t = await topic.new_topic(
+        title="New Topic",
+        chat_id=message.chat.id,
+        user_id=uid,
+        messages=[],
+        generate_title=True,
+        thread_id=message.message_thread_id
+    )
+
+    await profiles.create(
+        uid=uid,
+        endpoint=endpoint.name,
+        model=endpoint.default_model,
+        prompt="System",
+        chat_id=message.chat.id,
+        chat_type=ChatType.get(message.chat.type).value,
+        thread_id=message.message_thread_id,
+        topic_id=t.tid
+    )
+
+
 def permission_check(func):
     async def wrapper(message: Message, bot: AsyncTeleBot):
-        uid = message.from_user.id
-        if await profiles.is_enrolled(uid):
-            await func(message, bot)
-        else:
-            text = "Please enter a valid key to use this bot. You can do this by typing '/key key'."
-            await send_message(bot, message.chat.id, message.message_id, text, message.message_thread_id)
+        try:
+            uid = message.from_user.id
+            if await users.is_enrolled(uid):
+                if not await profiles.has_profile(uid, message.chat.id, message.message_thread_id):
+                    await new_profile(message)
+
+                await func(message, bot)
+            else:
+                text = "Please enter a valid key to use this bot. You can do this by typing '/key key'."
+                await send_message(bot, message.chat.id, message.message_id, text, message.message_thread_id)
+        except Exception as e:
+            logging.exception(e)
 
     return wrapper
 
@@ -110,13 +143,13 @@ def all_modules() -> list[str]:
 
 
 async def show_conversation(
-    chat_id: int,
-    msg_id: int,
-    uid: int,
-    bot: AsyncTeleBot,
-    convo: types.Topic,
-    reply_msg_id: int = None,
-    thread_id: int = None,
+        chat_id: int,
+        msg_id: int,
+        uid: int,
+        bot: AsyncTeleBot,
+        convo: types.Topic,
+        reply_msg_id: int = None,
+        thread_id: int = None,
 ):
     messages: list[types.Message] = convo.messages or []
     messages = [
@@ -156,7 +189,12 @@ async def show_conversation(
 
 
 async def create_convo_and_update_profile(
-    uid: int, chat_id: int, profile: types.Profile, chat_type: str, title: str = None
+        uid: int,
+        chat_id: int,
+        profile: types.Profile,
+        chat_type: str,
+        title: str = None,
+        thread_id: int = 0,
 ) -> types.Topic:
     prompt = get_prompt(profiles.get_prompt(profile.prompt))
     messages = [prompt] if prompt else None
@@ -167,17 +205,18 @@ async def create_convo_and_update_profile(
         user_id=uid,
         messages=messages,
         generate_title=title is None or len(title) == 0,
+        thread_id=thread_id,
     )
 
-    profile.set_conversation_id(convo.tid, chat_type)
-    await profiles.update_conversation_id(uid, chat_type, convo.tid)
+    profile.topic_id = convo.tid
+    await profiles.update(uid, chat_id, thread_id, profile)
 
     return convo
 
 
 async def get_profile_text(profile: types.Profile, chat_type: str):
     convo_title = "None"
-    convo_id = profile.get_conversation_id(chat_type)
+    convo_id = profile.topic_id
     if convo_id:
         convo = await topic.get_topic(convo_id)
         if convo:

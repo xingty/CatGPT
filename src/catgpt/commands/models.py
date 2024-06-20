@@ -21,7 +21,7 @@ SHORT_NAME = {
 
 async def handle_models(message: Message, bot: AsyncTeleBot):
     uid = message.from_user.id
-    profile = await profiles.load(uid)
+    profile = await profiles.load(uid, message.chat.id, message.message_thread_id)
     bot_name = await get_bot_name()
     endpoint = config.get_endpoint(profile.endpoint or "None")
 
@@ -113,7 +113,7 @@ async def do_model_change(
         await bot.delete_messages(chat_id, [message.message_id, msg_ids[0]])
         return
 
-    profile = await profiles.load(uid)
+    profile = await profiles.load(uid, chat_id, message.message_thread_id)
     await _do_model_change(
         bot=bot,
         profile=profile,
@@ -158,7 +158,7 @@ async def _do_model_change(
             return
 
         profile.model = model
-        await profiles.update_model(uid, profile.model)
+        await profiles.update_model(uid,chat_id,thread_id, profile.model)
 
     await bot.send_message(
         chat_id=chat_id,

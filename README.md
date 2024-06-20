@@ -1,6 +1,6 @@
 # CatGPT 
 
-CatGPt is a Telegram bot that integrates with OpenAI's api for users who like to use OpenAI in Telegram.
+CatGPt is a Telegram bot that integrates with OpenAI's api for people who like to use OpenAI in Telegram.
 
 ### Features
 * Multiple topics
@@ -8,6 +8,25 @@ CatGPt is a Telegram bot that integrates with OpenAI's api for users who like to
  * Multiple endpoints
 
  * Powerful and easy to use
+
+
+
+### Installation
+
+* Install from source code
+
+  ```shell
+  git clone https://github.com/xingty/CatGPT
+  cd CatGPT
+  pip3 install -r requirements.txt
+  
+  pip3 install . # 
+  cat-gpt --config your-config-file.json
+  ```
+  
+* Install from release files
+  
+   
 
 
  ### Commands
@@ -48,7 +67,7 @@ CatGPt is a Telegram bot that integrates with OpenAI's api for users who like to
 
   * `download`
 
-    Use `/topic download` to download the topic directly without a confirmation operation.
+    Use `/topic download` to download the topic's content directly without a confirmation operation. The content will be encoded as Markdown file
 	  
   * **other characters**
 

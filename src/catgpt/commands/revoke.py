@@ -6,9 +6,9 @@ from ..utils.md2tgmd import escape
 from ..storage import types
 
 
-async def get_convo(uid: int, chat_type: str) -> types.Topic:
-    profile = await profiles.load(uid)
-    convo_id = profile.get_conversation_id(chat_type)
+async def get_convo(uid, chat_id, thread_id) -> types.Topic:
+    profile = await profiles.load(uid, chat_id, thread_id)
+    convo_id = profile.topic_id
     convo = await topic.get_topic(convo_id, fetch_messages=True)
 
     return convo
@@ -16,7 +16,7 @@ async def get_convo(uid: int, chat_type: str) -> types.Topic:
 
 async def handle_revoke(message: Message, bot: AsyncTeleBot):
     uid = message.from_user.id
-    convo = await get_convo(uid, message.chat.type)
+    convo = await get_convo(uid, message.chat.id, message.message_thread_id)
     if convo is None:
         await bot.reply_to(message, "Please select a topic to use.")
         return
@@ -77,7 +77,7 @@ async def do_revoke(
         await bot.delete_messages(chat_id, [message_id, message.message_id])
         return
 
-    convo = await get_convo(uid, message.chat.type)
+    convo = await get_convo(uid, chat_id, message.message_thread_id)
     if convo is None:
         await bot.send_message(
             chat_id=chat_id,

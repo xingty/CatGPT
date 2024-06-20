@@ -53,8 +53,8 @@ async def do_clear(
         await bot.delete_messages(chat_id, [message_id, message.message_id])
         return
 
-    profile = await profiles.load(uid)
-    convo_id = profile.get_conversation_id(message.chat.type)
+    profile = await profiles.load(uid, chat_id, message.message_thread_id)
+    convo_id = profile.topic_id
     convo = await topic.get_topic(convo_id, fetch_messages=True)
     if convo is None:
         return

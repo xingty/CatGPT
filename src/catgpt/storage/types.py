@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 
 class Message:
     def __init__(
-        self, role, content, message_id, chat_id, topic_id, ts, message_type=0
+            self, role, content, message_id, chat_id, topic_id, ts, message_type=0
     ):
         self.role = role
         self.content = content
@@ -41,13 +41,14 @@ class MessageHolder:
 
 class Topic:
     def __init__(
-        self,
-        tid: int,
-        label: str,
-        chat_id: int,
-        user_id: int,
-        title: str,
-        generate_title: bool,
+            self,
+            tid: int,
+            label: str,
+            chat_id: int,
+            user_id: int,
+            title: str,
+            generate_title: bool,
+            thread_id: int,
     ):
         self.tid = tid
         self.title = title
@@ -55,57 +56,51 @@ class Topic:
         self.chat_id = chat_id
         self.user_id = user_id
         self.generate_title = generate_title
+        self.thread_id = thread_id
         self.messages: list[Message] = []
 
     def __repr__(self):
         return (
             f"Topic(id={self.tid}, title={self.title}, label={self.label}, chat_id={self.chat_id}, "
-            f"user_id={self.user_id}, messages={self.messages})"
+            f"user_id={self.user_id}, messages={self.messages}), thread_id={self.thread_id}, "
         )
 
 
 class Profile:
     def __init__(
-        self,
-        uid: int,
-        model: str,
-        endpoint: str,
-        prompt: str,
-        private: int,
-        channel: int,
-        groups: int,
-        blocked: int = 0,
+            self,
+            uid: int,
+            model: str,
+            endpoint: str,
+            prompt: str,
+            chat_type: int,
+            chat_id: int,
+            thread_id: int,
+            topic_id: int,
     ):
         self.uid = uid
         self.model = model
         self.endpoint = endpoint
         self.prompt = prompt
-        self.private = private
-        self.channel = channel
-        self.groups = groups
-        self.blocked = blocked
+        self.chat_type = chat_type
+        self.chat_id = chat_id
+        self.thread_id = thread_id
+        self.topic_id = topic_id
 
-    def get_conversation_id(self, chat_type: str):
-        if chat_type == "private":
-            return self.private
-        elif chat_type == "channel":
-            return self.channel
-        else:
-            return self.groups
-
-    def set_conversation_id(self, conversation_id: int, chat_type: str):
-        if chat_type == "private":
-            self.private = conversation_id
-        elif chat_type == "channel":
-            self.channel = conversation_id
-        else:
-            self.groups = conversation_id
+    def get_key(self):
+        return f"{self.uid}-{self.chat_id}-{self.thread_id}"
 
     def __repr__(self):
         return (
             f"Profile(uid={self.uid}, model={self.model}, endpoint={self.endpoint}, prompt={self.prompt}, "
-            f"chat={self.private}, channel={self.channel}, groups={self.groups})"
+            f"chat_type={self.chat_type}, chat_id={self.chat_id}, thread_id={self.thread_id})"
         )
+
+
+class User:
+    def __init__(self, uid: int, blocked: int):
+        self.uid = uid
+        self.blocked = blocked
 
 
 class TopicStorage(ABC):
@@ -130,7 +125,7 @@ class TopicStorage(ABC):
         pass
 
     @abstractmethod
-    async def list_topics(self, uid: int, chat_id: int) -> list[Topic]:
+    async def list_topics(self, uid: int, chat_id: int, thread_id: int) -> list[Topic]:
         pass
 
     @abstractmethod
@@ -146,7 +141,7 @@ class TopicStorage(ABC):
         pass
 
     async def get_message_holder(
-        self, user_id: int, chat_id: int
+            self, user_id: int, chat_id: int
     ) -> [MessageHolder | None]:
         pass
 
@@ -163,31 +158,19 @@ class ProfileStorage:
         pass
 
     @abstractmethod
-    async def get_profile(self, uid: int) -> [Profile | None]:
+    async def get_profile(self, uid: int, chat_id: int, thread_id: int) -> [Profile | None]:
         pass
 
     @abstractmethod
-    async def get_conversation_id(self, uid: int, chat_type: str) -> int:
+    async def update(self, uid: int, chat_id: int, thread_id: int, profile: Profile):
+        pass
+
+
+class UserStorage:
+    @abstractmethod
+    async def get_user(self, uid: int) -> [User | None]:
         pass
 
     @abstractmethod
-    async def update_conversation_id(
-        self, uid: int, chat_type: str, conversation_id: int
-    ):
-        pass
-
-    @abstractmethod
-    async def update_prompt(self, uid: int, prompt: str):
-        pass
-
-    @abstractmethod
-    async def update_model(self, uid: int, model: str):
-        pass
-
-    @abstractmethod
-    async def update_endpoint(self, uid: int, endpoint: str):
-        pass
-
-    @abstractmethod
-    async def update(self, uid: int, profile: Profile):
+    async def create_user(self, user: User) -> int:
         pass

@@ -9,6 +9,7 @@ create table topic
     user_id         INTEGER,
     title           TEXT,
     generate_title  INTEGER,
+    thread_id       INTEGER,
     unique (label)
 );
 
@@ -41,18 +42,26 @@ create table message_holder
 
 create table profile
 (
-    uid         INTEGER,
-    model       TEXT,
-    endpoint    TEXT,
-    prompt      TEXT,
-    private     INTEGER,
-    channel     INTEGER,
-    groups      INTEGER,
-    blocked     INTEGER,
-    unique (uid)
+    uid       INTEGER,
+    model     TEXT,
+    endpoint  TEXT,
+    prompt    TEXT,
+    chat_type INTEGER default 0 not null,
+    chat_id   INTEGER default 0 not null,
+    thread_id INTEGER default 0 not null,
+    topic_id  INTEGER default 0 not null,
+    unique (uid, chat_id, thread_id)
 );
 
 create index idx_profile_uid on profile (uid);
+
+create table users
+(
+    uid             INTEGER,
+    blocked         TEXT,
+    unique (uid)
+);
+
 
 create table version
 (

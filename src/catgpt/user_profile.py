@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 
 from .storage import types
+from .types import ChatType
 
 DEFAULT_PROFILE = {
     "prompt": "You are ChatGPT, a large language model trained by OpenAI.\nLatex inline: $x^2$\nLatex block: $$e=mc^2$$",
@@ -30,27 +31,30 @@ class UserProfile:
         if len(self.presets) == 0:
             self.presets["System"] = DEFAULT_PRESET
 
-    async def load(self, uid: int) -> types.Profile:
-        return await self.storage.get_profile(uid)
+    async def load(self, uid: int, chat_id: int, thread_id: int) -> types.Profile:
+        profile = await self.storage.get_profile(uid, chat_id, thread_id)
+        return profile
 
     async def create(
-        self,
-        uid: int,
-        model: str,
-        endpoint: str,
-        prompt: str = "",
-        private: int = 0,
-        channel: int = 0,
-        groups: int = 0,
+            self,
+            uid: int,
+            model: str,
+            endpoint: str,
+            prompt: str,
+            chat_type: int,
+            chat_id: int,
+            thread_id: int,
+            topic_id: int,
     ):
         profile = types.Profile(
             uid=uid,
             model=model,
             endpoint=endpoint,
             prompt=prompt,
-            private=private,
-            channel=channel,
-            groups=groups,
+            chat_type=chat_type,
+            chat_id=chat_id,
+            thread_id=thread_id,
+            topic_id=topic_id,
         )
 
         await self.storage.create_profile(profile)
@@ -59,51 +63,81 @@ class UserProfile:
     def get_preset(self, preset_name: str):
         return self.presets.get(preset_name)
 
-    async def update(self, uid: int, profile: types.Profile):
+    async def get_profile(self, uid: int, chat_id: int, thread_id: int) -> [types.Profile | None]:
         assert uid > 0, "invalid uid: " + str(uid)
-        await self.storage.update(uid, profile)
+        profile = await self.storage.get_profile(uid, chat_id, thread_id)
+        if not profile:
+            return None
 
-    async def update_model(self, uid: int, model: str):
+        self.memory[profile.get_key()] = True
+
+        return profile
+
+    async def has_profile(self, uid: int, chat_id: int, thread_id: int) -> bool:
         assert uid > 0, "invalid uid: " + str(uid)
-        assert model, "invalid model: " + model
+        key = f"{uid}-{chat_id}-{thread_id}"
+        if key in self.memory:
+            return True
 
-        await self.storage.update_model(uid, model)
+        profile = await self.get_profile(uid, chat_id, thread_id)
 
-    async def update_prompt(self, uid: int, prompt: str):
+        if not profile:
+            return False
+
+        self.memory[key] = True
+        return True
+
+    async def update(self, uid: int, chat_id: int, thread_id: int, profile: types.Profile):
         assert uid > 0, "invalid uid: " + str(uid)
-        await self.storage.update_prompt(uid, prompt)
+        await self.storage.update(uid, chat_id, thread_id, profile)
+
+    async def update_model(self, uid: int, chat_id: int, thread_id: int, model: str):
+        assert uid > 0, "invalid uid: " + str(uid)
+        profile = await self.get_profile(uid, chat_id, thread_id)
+        profile.model = model
+        await self.storage.update(uid, chat_id, thread_id, profile)
+
+    async def update_prompt(self, uid: int, chat_id: int, thread_id: int, prompt: str):
+        assert uid > 0, "invalid uid: " + str(uid)
+        profile = await self.get_profile(uid, chat_id, thread_id)
+        profile.prompt = prompt
+        await self.storage.update(uid, chat_id, thread_id, profile)
 
     async def get_conversation_id(self, uid: int, chat_type: str) -> int:
         return await self.storage.get_conversation_id(uid, chat_type)
 
     async def update_conversation_id(
-        self, uid: int, chat_type: str, conversation_id: int
+            self, uid: int, chat_id: int, thread_id: int, conversation_id: int
     ):
         assert uid > 0, "invalid uid: " + str(uid)
-        await self.storage.update_conversation_id(uid, chat_type, conversation_id)
+        profile = await self.get_profile(uid, chat_id, thread_id)
+        profile.topic_id = conversation_id
+        await self.storage.update(uid, chat_id, thread_id, profile)
+
+    def get_prompt(self, prompt) -> str:
+        prompt = self.presets.get(prompt, {})
+        return prompt.get("prompt", "")
+
+
+class Users:
+    def __init__(self, storage: types.UserStorage):
+        self.storage = storage
+        self.memory = {}
+
+    async def get_user(self, uid: int) -> types.User | None:
+        return await self.storage.get_user(uid)
+
+    async def create_user(self, uid: int, blocked: int = 0):
+        user = types.User(uid=uid, blocked=blocked)
+        await self.storage.create_user(user)
 
     async def is_enrolled(self, uid: int) -> bool:
         if uid in self.memory:
             return True
 
-        profile = await self.storage.get_profile(uid)
-        if profile:
+        u = await self.storage.get_user(uid)
+        if u:
             self.memory[uid] = True
             return True
 
         return False
-
-    async def enroll(self, uid: int, model: str, endpoint: str):
-        await self.create(
-            uid=uid,
-            model=model,
-            endpoint=endpoint,
-            prompt="",
-            private=0,
-            channel=0,
-            groups=0,
-        )
-
-    def get_prompt(self, prompt) -> str:
-        prompt = self.presets.get(prompt, {})
-        return prompt.get("prompt", "")

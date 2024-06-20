@@ -1,5 +1,5 @@
 from telebot.async_telebot import AsyncTeleBot
-from telebot.types import Message, InlineKeyboardButton, InlineKeyboardMarkup, InputFile
+from telebot.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
 
 from ..utils.md2tgmd import escape
 from ..utils.text import encode_message_id
@@ -10,8 +10,8 @@ from ..storage import types
 
 async def handle_conversation(message: Message, bot: AsyncTeleBot):
     uid = message.from_user.id
-    profile = await profiles.load(uid)
-    convo_id = profile.get_conversation_id(message.chat.type)
+    profile = await profiles.load(uid, message.chat.id, message.message_thread_id)
+    convo_id = profile.topic_id
     convo = await topic.get_topic(convo_id, fetch_messages=True)
     if convo is None:
         text = "Topic not found. Please start a new topic or switch to a existing one."
@@ -39,7 +39,7 @@ async def handle_conversation(message: Message, bot: AsyncTeleBot):
     else:
         convo.title = instruction
         convo.generate_title = False
-        await profiles.update(uid, profile)
+        await profiles.update(uid, message.chat.id, message.message_thread_id, profile)
         await topic.update_topic(convo)
         await bot.send_message(
             chat_id=message.chat.id,

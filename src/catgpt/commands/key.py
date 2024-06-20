@@ -3,12 +3,7 @@ import hmac
 from telebot.async_telebot import AsyncTeleBot
 from telebot.types import Message
 
-from ..context import profiles, config
-
-
-async def enroll(uid: int):
-    endpoint = config.get_default_endpoint()
-    await profiles.enroll(uid, endpoint.default_model, endpoint.name)
+from ..context import users, config
 
 
 def compare(key1: str, key2: str):
@@ -17,10 +12,10 @@ def compare(key1: str, key2: str):
 
 async def handle_key(message: Message, bot: AsyncTeleBot):
     uid = message.from_user.id
-    if await profiles.is_enrolled(uid):
+    if await users.is_enrolled(uid):
         msg = "You have already been registered in the system. No need to enter the key again."
     elif compare(message.text.replace("/key", "").strip(), config.access_key):
-        await enroll(uid)
+        await users.create_user(uid=uid, blocked=0)
         username = message.from_user.username
         msg = f'@{username} Your registration is complete. Have fun!"'
         await bot.delete_message(chat_id=message.chat.id, message_id=message.message_id)
