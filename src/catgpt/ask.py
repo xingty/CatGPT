@@ -1,7 +1,7 @@
 from openai import AsyncOpenAI
 
 from .storage import types
-from .context import Endpoint, Provider
+from .types import Endpoint, Provider
 
 from .provider import oai
 
