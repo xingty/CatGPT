@@ -1,8 +1,11 @@
-from unittest import IsolatedAsyncioTestCase
 import unittest
 import asyncio
-
 import time
+import os
+
+from unittest import IsolatedAsyncioTestCase
+from pathlib import Path
+
 from catgpt.storage.sqlite3_session_storage import (
     Sqlite3Datasource,
     Sqlite3TopicStorage,
@@ -13,16 +16,6 @@ from catgpt.storage import types
 from catgpt.topic import Topic
 from catgpt.user_profile import UserProfile
 
-schema = "file::memory:?cache=shared"
-datasource = Sqlite3Datasource(schema)
-storage.datasource = datasource
-
-topic_storage = Sqlite3TopicStorage()
-profile_storage = Sqlite3ProfileStorage()
-
-topic = Topic(topic_storage)
-profile = UserProfile(profile_storage)
-
 
 class TestService(IsolatedAsyncioTestCase):
 
@@ -31,6 +24,24 @@ class TestService(IsolatedAsyncioTestCase):
         self.internal_tid = 0
 
     def setUp(self):
+        db_file = "file::memory:?cache=shared"
+        if os.path.exists(db_file):
+            os.remove(db_file)
+
+        schema_file = (
+            Path(__file__)
+            .parent.parent.joinpath("src/catgpt/data")
+            .joinpath("session_schema.sql")
+        )
+        datasource = Sqlite3Datasource(db_file, schema_file)
+        storage.datasource = datasource
+
+        topic_storage = Sqlite3TopicStorage()
+        profile_storage = Sqlite3ProfileStorage()
+
+        self.topic = Topic(topic_storage)
+        self.profile = UserProfile(profile_storage, Path("presets.json"))
+
         async def init_data():
             messages = [
                 types.Message(
@@ -40,6 +51,7 @@ class TestService(IsolatedAsyncioTestCase):
                     chat_id=1,
                     topic_id=1,
                     ts=int(time.time()),
+                    message_type=0,
                 ),
                 types.Message(
                     role="assistant",
@@ -48,20 +60,22 @@ class TestService(IsolatedAsyncioTestCase):
                     chat_id=1,
                     topic_id=1,
                     ts=int(time.time() + 1),
+                    message_type=0,
                 ),
             ]
 
-            record = await topic.new_topic(
+            record = await self.topic.new_topic(
                 title="the topic for test",
                 chat_id=1,
                 user_id=3,
                 messages=messages,
                 generate_title=True,
+                thread_id=0,
             )
 
             self.assertTrue(record.tid > 0)
             self.internal_tid = record.tid
-            data_in_db: types.Topic = await topic.get_topic(
+            data_in_db: types.Topic = await self.topic.get_topic(
                 record.tid, fetch_messages=True
             )
             self.assertTrue(
@@ -71,26 +85,26 @@ class TestService(IsolatedAsyncioTestCase):
         asyncio.run(init_data())
 
     async def test_new_topic(self):
-        record = await topic.new_topic(
+        record = await self.topic.new_topic(
             title="test", chat_id=1, user_id=3, messages=[], generate_title=True
         )
 
         self.assertTrue(record.tid > 0)
 
     async def test_get_messages(self):
-        messages = await topic.get_messages([self.internal_tid])
+        messages = await self.topic.get_messages([self.internal_tid])
         self.assertTrue(len(messages) == 2)
 
     async def test_list_topics(self):
-        topics = await topic.list_topics(3, 1)
+        topics = await self.topic.list_topics(3, 1, 0)
         self.assertTrue(len(topics) >= 1)
 
     async def test_clear_topic(self):
-        data = await topic.get_topic(self.internal_tid)
+        data = await self.topic.get_topic(self.internal_tid)
         self.assertTrue(data)
 
-        await topic.clear_topic(data)
-        data: types.Topic = await topic.get_topic(self.internal_tid)
+        await self.topic.clear_topic(data)
+        data: types.Topic = await self.topic.get_topic(self.internal_tid)
 
         self.assertTrue(data and data.title == "new topic" and data.generate_title > 0)
 
