@@ -1,5 +1,5 @@
 [project]
-name = "RagdollGPT"
+name = "mqgpt"
 version = "0.1.0"
 description = "A chatbot built on telegram that integrates OpenAI's API"
 authors = [
@@ -11,7 +11,7 @@ dependencies = [
     "openai==1.6.0",
     "aiohttp==3.9.1",
     "telegramify-markdown==0.1.4",
-    "google-generativeai>=0.7.0",
+    "google-generativeai==0.7.0"
 ]
 requires-python = ">=3.10"
 readme = "README.md"
@@ -24,7 +24,7 @@ build-backend = "pdm.backend"
 distribution = true
 
 [project.scripts]
-cat-gpt = "catgpt.main:launch"
+mq-gpt = "catgpt.main:launch"
 
 [tool.pdm.build]
 includes = ["src", "assets/"]
