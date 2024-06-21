@@ -83,7 +83,7 @@ async def do_revoke(
             chat_id=chat_id,
             text="Conversation not found",
             reply_to_message_id=message_id,
-            message_thread_id=message.message_thread_id
+            message_thread_id=message.message_thread_id,
         )
         return
 
@@ -100,7 +100,7 @@ async def do_revoke(
             chat_id=chat_id,
             text="Could not find any message.py in current conversation",
             reply_to_message_id=message_id,
-            message_thread_id=message.message_thread_id
+            message_thread_id=message.message_thread_id,
         )
         return
 

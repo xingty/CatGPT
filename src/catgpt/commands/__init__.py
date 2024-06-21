@@ -4,7 +4,7 @@ import logging
 from pathlib import Path
 from io import BytesIO
 
-from telebot.types import Message, InlineKeyboardButton, InlineKeyboardMarkup, InputFile
+from telebot.types import Message, InputFile
 from telebot.async_telebot import AsyncTeleBot
 from telebot.types import BotCommand
 from telebot.asyncio_helper import RequestTimeout
@@ -19,13 +19,13 @@ from ..types import ChatType
 
 
 async def send_message(
-        bot: AsyncTeleBot,
-        chat_id: int,
-        reply_id: int,
-        text: str,
-        thread_id: int = None,
-        parse_mode: str = "MarkdownV2",
-        disable_preview: bool = True,
+    bot: AsyncTeleBot,
+    chat_id: int,
+    reply_id: int,
+    text: str,
+    thread_id: int = None,
+    parse_mode: str = "MarkdownV2",
+    disable_preview: bool = True,
 ):
     retry_counter = 0
     while retry_counter < 3:
@@ -36,7 +36,7 @@ async def send_message(
                 reply_to_message_id=reply_id,
                 parse_mode=parse_mode,
                 disable_web_page_preview=disable_preview,
-                message_thread_id=thread_id
+                message_thread_id=thread_id,
             )
             break
         except RequestTimeout as e:
@@ -57,7 +57,7 @@ async def new_profile(message: Message):
         user_id=uid,
         messages=[],
         generate_title=True,
-        thread_id=message.message_thread_id
+        thread_id=message.message_thread_id,
     )
 
     await profiles.create(
@@ -68,7 +68,7 @@ async def new_profile(message: Message):
         chat_id=message.chat.id,
         chat_type=ChatType.get(message.chat.type).value,
         thread_id=message.message_thread_id,
-        topic_id=t.tid
+        topic_id=t.tid,
     )
 
 
@@ -77,13 +77,21 @@ def permission_check(func):
         try:
             uid = message.from_user.id
             if await users.is_enrolled(uid):
-                if not await profiles.has_profile(uid, message.chat.id, message.message_thread_id):
+                if not await profiles.has_profile(
+                    uid, message.chat.id, message.message_thread_id
+                ):
                     await new_profile(message)
 
                 await func(message, bot)
             else:
                 text = "Please enter a valid key to use this bot. You can do this by typing '/key key'."
-                await send_message(bot, message.chat.id, message.message_id, text, message.message_thread_id)
+                await send_message(
+                    bot,
+                    message.chat.id,
+                    message.message_id,
+                    text,
+                    message.message_thread_id,
+                )
         except Exception as e:
             logging.exception(e)
 
@@ -145,59 +153,13 @@ def all_modules() -> list[str]:
     return commands
 
 
-async def show_conversation(
-        chat_id: int,
-        msg_id: int,
-        uid: int,
-        bot: AsyncTeleBot,
-        convo: types.Topic,
-        reply_msg_id: int = None,
-        thread_id: int = None,
-):
-    messages: list[types.Message] = convo.messages or []
-    messages = [
-        msg for msg in messages if (msg.role != "system" and msg.chat_id == chat_id)
-    ]
-    segments = messages_to_segments(messages)
-    if len(segments) == 0:
-        await bot.send_message(
-            chat_id=chat_id,
-            text=escape(f"Current topic: **{convo.title}**\n"),
-            parse_mode="MarkdownV2",
-            message_thread_id=thread_id
-        )
-        return
-
-    last_message_id = reply_msg_id
-    context = f"{msg_id}:{chat_id}:{uid}"
-    keyboard = [
-        [
-            InlineKeyboardButton("Share", callback_data=f"share:{convo.tid}:{context}"),
-            InlineKeyboardButton(
-                "Download", callback_data=f"download:{convo.tid}:{context}"
-            ),
-        ]
-    ]
-    for content in segments:
-        reply_msg: Message = await bot.send_message(
-            chat_id=chat_id,
-            text=escape(content),
-            parse_mode="MarkdownV2",
-            disable_web_page_preview=True,
-            reply_to_message_id=last_message_id,
-            reply_markup=InlineKeyboardMarkup(keyboard),
-            message_thread_id=thread_id
-        )
-        last_message_id = reply_msg.message_id
-
-
 async def create_convo_and_update_profile(
-        uid: int,
-        chat_id: int,
-        profile: types.Profile,
-        chat_type: str,
-        title: str = None,
-        thread_id: int = 0,
+    uid: int,
+    chat_id: int,
+    profile: types.Profile,
+    chat_type: str,
+    title: str = None,
+    thread_id: int = 0,
 ) -> types.Topic:
     prompt = get_prompt(profiles.get_prompt(profile.prompt))
     messages = [prompt] if prompt else None
@@ -263,5 +225,5 @@ async def send_file(bot: AsyncTeleBot, message: Message, convo: types.Topic):
     await bot.send_document(
         chat_id=message.chat.id,
         document=file,
-        message_thread_id=message.message_thread_id
+        message_thread_id=message.message_thread_id,
     )

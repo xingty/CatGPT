@@ -135,7 +135,7 @@ class Sqlite3TopicStorage(types.TopicStorage, tx.Transactional):
 
     @tx.transactional(tx_type="read")
     async def get_message_holder(
-            self, uid: int, chat_id: int
+        self, uid: int, chat_id: int
     ) -> [types.MessageHolder | None]:
         transaction = await self.retrieve_transaction()
         conn = transaction.connection
@@ -203,7 +203,9 @@ class Sqlite3TopicStorage(types.TopicStorage, tx.Transactional):
         return types.Topic(*row)
 
     @tx.transactional(tx_type="read")
-    async def list_topics(self, uid: int, chat_id: int, thread_id: int) -> list[types.Topic]:
+    async def list_topics(
+        self, uid: int, chat_id: int, thread_id: int
+    ) -> list[types.Topic]:
         t = await self.retrieve_transaction()
         sql = "select * from topic where user_id = ? and chat_id = ?"
         params = [uid, chat_id]
@@ -313,7 +315,9 @@ class Sqlite3ProfileStorage(types.ProfileStorage, tx.Transactional):
         return cursor.lastrowid
 
     @tx.transactional(tx_type="read")
-    async def get_profile(self, uid: int, chat_id: int, thread_id: int) -> [types.Profile | None]:
+    async def get_profile(
+        self, uid: int, chat_id: int, thread_id: int
+    ) -> [types.Profile | None]:
         t = await self.retrieve_transaction()
         sql = "select * from profile where uid = ? and chat_id = ? and thread_id = ?"
         row = t.connection.execute(sql, (uid, chat_id, thread_id or 0)).fetchone()
@@ -336,7 +340,9 @@ class Sqlite3ProfileStorage(types.ProfileStorage, tx.Transactional):
         return row[0]
 
     @tx.transactional(tx_type="write")
-    async def update(self, uid: int, chat_id: int, thread_id: int, profile: types.Profile):
+    async def update(
+        self, uid: int, chat_id: int, thread_id: int, profile: types.Profile
+    ):
         t = await self.retrieve_transaction()
         sql = f"update profile set model = ?, endpoint = ?, prompt = ?, topic_id = ? where uid = ? and chat_id = ? and thread_id = ?"
         t.connection.execute(

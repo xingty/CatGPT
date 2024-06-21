@@ -52,7 +52,7 @@ async def show_conversation_list(
             chat_id=chat_id,
             text=text,
             reply_markup=InlineKeyboardMarkup(keyboard),
-            message_thread_id=thread_id
+            message_thread_id=thread_id,
         )
     else:
         await bot.edit_message_text(
@@ -66,7 +66,12 @@ async def show_conversation_list(
 async def handle_convo(message: Message, bot: AsyncTeleBot):
     uid = message.from_user.id
     await show_conversation_list(
-        uid, message.message_id, message.chat.id, bot, message.chat.type, message.message_thread_id
+        uid,
+        message.message_id,
+        message.chat.id,
+        bot,
+        message.chat.type,
+        message.message_thread_id,
     )
 
 
@@ -92,12 +97,14 @@ async def do_convo_change(
         return
 
     elif real_op == "s":  # switch to this conversation
-        await profiles.update_conversation_id(uid, chat_id, message.message_thread_id, conversation_id)
+        await profiles.update_conversation_id(
+            uid, chat_id, message.message_thread_id, conversation_id
+        )
         await bot.send_message(
             chat_id=chat_id,
             parse_mode="MarkdownV2",
             text=escape(f"Switched to topic `{convo.title}`"),
-            message_thread_id=message.message_thread_id
+            message_thread_id=message.message_thread_id,
         )
         await bot.delete_messages(chat_id, [message.message_id] + msg_ids)
         return
@@ -109,7 +116,7 @@ async def do_convo_change(
                 parse_mode="MarkdownV2",
                 text=escape(f"Share link: {html_url}"),
                 disable_web_page_preview=False,
-                message_thread_id=message.message_thread_id
+                message_thread_id=message.message_thread_id,
             )
     elif real_op == "dl":
         await send_file(bot, message, convo)
@@ -122,7 +129,7 @@ async def do_convo_change(
             bot=bot,
             chat_type=message.chat.type,
             edit_msg_id=msg_ids[1],
-            thread_id=message.message_thread_id
+            thread_id=message.message_thread_id,
         )
     elif real_op == "c":  # cancel
         print("on click dismiss")

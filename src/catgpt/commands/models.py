@@ -57,7 +57,7 @@ async def handle_models(message: Message, bot: AsyncTeleBot):
         message_id=message.message_id,
         chat_id=message.chat.id,
         uid=uid,
-        thread_id=message.message_thread_id
+        thread_id=message.message_thread_id,
     )
 
 
@@ -121,7 +121,7 @@ async def do_model_change(
         msg_ids=msg_ids + [message.message_id],
         chat_id=chat_id,
         uid=uid,
-        thread_id=message.message_thread_id
+        thread_id=message.message_thread_id,
     )
 
 
@@ -143,7 +143,7 @@ async def _do_model_change(
                 reply_to_message_id=message_id,
                 parse_mode="MarkdownV2",
                 text=escape(f"endpoint not found"),
-                message_thread_id=thread_id
+                message_thread_id=thread_id,
             )
             return
 
@@ -153,18 +153,18 @@ async def _do_model_change(
                 reply_to_message_id=message_id,
                 parse_mode="MarkdownV2",
                 text=escape(f"current endpoint does not support the model `{model}`"),
-                message_thread_id=thread_id
+                message_thread_id=thread_id,
             )
             return
 
         profile.model = model
-        await profiles.update_model(uid,chat_id,thread_id, profile.model)
+        await profiles.update_model(uid, chat_id, thread_id, profile.model)
 
     await bot.send_message(
         chat_id=chat_id,
         parse_mode="MarkdownV2",
         text=escape(f"current model: `{model}`"),
-        message_thread_id=thread_id
+        message_thread_id=thread_id,
     )
     await bot.delete_messages(chat_id, msg_ids)
 

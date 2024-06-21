@@ -61,7 +61,9 @@ def get_model(endpoint: Endpoint, body: dict):
 async def do_ask(endpoint: Endpoint, body: dict, stream=True):
     model = get_model(endpoint, body)
     contents = message2payload(body.get("messages", []))
-    async for chunk in await model.generate_content_async(contents=contents, stream=stream):
+    async for chunk in await model.generate_content_async(
+        contents=contents, stream=stream
+    ):
         if not chunk.candidates:
             continue
 

@@ -22,7 +22,9 @@ async def handle_key(message: Message, bot: AsyncTeleBot):
     else:
         msg = "Invalid key. Please enter a valid key to proceed."
 
-    await bot.send_message(chat_id=message.chat.id, text=msg, message_thread_id=message.message_thread_id)
+    await bot.send_message(
+        chat_id=message.chat.id, text=msg, message_thread_id=message.message_thread_id
+    )
 
 
 def register(bot: AsyncTeleBot, decorator, provider) -> None:

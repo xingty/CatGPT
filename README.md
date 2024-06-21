@@ -37,7 +37,7 @@ CatGPt is a Telegram bot that integrates with OpenAI's api for people who like t
 
 * Install from release files
 
-  Download the latest build at xxx
+  Download the latest build at [Release](https://github.com/xingty/CatGPT/releases)
   
   ```shell
   pip3 install mqgpt-${version}-py3-none-any-whl
@@ -106,7 +106,7 @@ CatGPt is a Telegram bot that integrates with OpenAI's api for people who like t
 
 ​	You can also swtich to an endpoint directly with the command `/endpoints [your endpoint name]`
 
-* **/model `[model name]`
+* **/model** `[model name]`
 
   Display all the support models of the endpoint.
 
@@ -206,4 +206,4 @@ CatGPt is a Telegram bot that integrates with OpenAI's api for people who like t
 
 ### Thanks
 
-The idea of this project was inspired by YiHong0618's **[tg_bot_collections](https://github.com/yihong0618/tg_bot_collections)**, thanks [YiHong0618](https://github.com/yihong0618).
+The idea of this project was inspired by YiHong0618's **[tg_bot_collections](https://github.com/yihong0618/tg_bot_collections)**, thanks a lot for [YiHong0618](https://github.com/yihong0618).

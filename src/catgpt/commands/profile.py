@@ -36,7 +36,7 @@ async def handle_profiles(message: Message, bot: AsyncTeleBot):
         text=state_text,
         reply_markup=InlineKeyboardMarkup(keyboard),
         parse_mode="MarkdownV2",
-        message_thread_id=message.message_thread_id
+        message_thread_id=message.message_thread_id,
     )
 
 
@@ -64,7 +64,7 @@ async def do_profile_change(
         reply_to_message_id=message_id,
         parse_mode="MarkdownV2",
         text=escape(text),
-        message_thread_id=message.message_thread_id
+        message_thread_id=message.message_thread_id,
     )
 
 

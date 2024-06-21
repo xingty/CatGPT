@@ -2,9 +2,9 @@ from telebot.async_telebot import AsyncTeleBot
 from telebot.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
 
 from ..utils.md2tgmd import escape
-from ..utils.text import encode_message_id
+from ..utils.text import encode_message_id, messages_to_segments
 from ..context import profiles, config, topic, get_bot_name
-from . import show_conversation, share, send_file
+from . import share, send_file
 from ..storage import types
 
 
@@ -28,7 +28,7 @@ async def handle_conversation(message: Message, bot: AsyncTeleBot):
             bot=bot,
             convo=convo,
             reply_msg_id=message.message_id,
-            thread_id=message.message_thread_id
+            thread_id=message.message_thread_id,
         )
         return
 
@@ -46,8 +46,54 @@ async def handle_conversation(message: Message, bot: AsyncTeleBot):
             reply_to_message_id=message.message_id,
             parse_mode="MarkdownV2",
             text=escape(f"topic's title has been updated to `{instruction}`"),
-            message_thread_id=message.message_thread_id
+            message_thread_id=message.message_thread_id,
         )
+
+
+async def show_conversation(
+    chat_id: int,
+    msg_id: int,
+    uid: int,
+    bot: AsyncTeleBot,
+    convo: types.Topic,
+    reply_msg_id: int = None,
+    thread_id: int = None,
+):
+    messages: list[types.Message] = convo.messages or []
+    messages = [
+        msg for msg in messages if (msg.role != "system" and msg.chat_id == chat_id)
+    ]
+    segments = messages_to_segments(messages)
+    if len(segments) == 0:
+        await bot.send_message(
+            chat_id=chat_id,
+            text=escape(f"Current topic: **{convo.title}**\n"),
+            parse_mode="MarkdownV2",
+            message_thread_id=thread_id,
+        )
+        return
+
+    last_message_id = reply_msg_id
+    context = f"{msg_id}:{chat_id}:{uid}"
+    keyboard = [
+        [
+            InlineKeyboardButton("Share", callback_data=f"share:{convo.tid}:{context}"),
+            InlineKeyboardButton(
+                "Download", callback_data=f"download:{convo.tid}:{context}"
+            ),
+        ]
+    ]
+    for content in segments:
+        reply_msg: Message = await bot.send_message(
+            chat_id=chat_id,
+            text=escape(content),
+            parse_mode="MarkdownV2",
+            disable_web_page_preview=True,
+            reply_to_message_id=last_message_id,
+            reply_markup=InlineKeyboardMarkup(keyboard),
+            message_thread_id=thread_id,
+        )
+        last_message_id = reply_msg.message_id
 
 
 async def handle_download(
@@ -79,7 +125,7 @@ async def handle_share(
             reply_to_message_id=message_id,
             parse_mode="MarkdownV2",
             text=escape(f"topic not found"),
-            message_thread_id=message.message_thread_id
+            message_thread_id=message.message_thread_id,
         )
         return
 
@@ -89,7 +135,7 @@ async def handle_share(
             reply_to_message_id=message_id,
             parse_mode="MarkdownV2",
             text=escape(f"Please set share info in config"),
-            message_thread_id=message.message_thread_id
+            message_thread_id=message.message_thread_id,
         )
         return
 
@@ -110,7 +156,7 @@ async def handle_share(
         parse_mode="MarkdownV2",
         text=escape(f"Share this topic `<{convo.title}>` to github?"),
         reply_markup=InlineKeyboardMarkup(buttons),
-        message_thread_id=message.message_thread_id
+        message_thread_id=message.message_thread_id,
     )
 
 
@@ -139,7 +185,7 @@ async def _do_share(convo: types.Topic, bot: AsyncTeleBot, message: Message):
             parse_mode="MarkdownV2",
             text=escape(f"Title: {convo.title}\nShare link: {html_url}"),
             disable_web_page_preview=False,
-            message_thread_id=message.message_thread_id
+            message_thread_id=message.message_thread_id,
         )
     except Exception as e:
         await bot.send_message(
@@ -147,7 +193,7 @@ async def _do_share(convo: types.Topic, bot: AsyncTeleBot, message: Message):
             parse_mode="MarkdownV2",
             text=str(e),
             disable_web_page_preview=True,
-            message_thread_id=message.message_thread_id
+            message_thread_id=message.message_thread_id,
         )
 
 

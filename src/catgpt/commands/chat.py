@@ -215,7 +215,6 @@ async def do_generate_title(convo: types.Topic, messages: list, uid: int, text: 
     if endpoint is None:
         return
 
-
     title_prompt = "Please generate a title for this conversation without any lead-in, punctuation, quotation marks, periods, symbols, bold text, or additional text. Remove enclosing quotation marks. Please only return the title without any additional info."
 
     title_messages = messages + [
@@ -274,4 +273,6 @@ def register(bot: AsyncTeleBot, decorator, provider) -> None:
         handler, regexp=r"^(?!/)", pass_bot=True, content_types=["text"]
     )
     bot.register_message_handler(handler, pass_bot=True, content_types=["photo"])
-    bot.register_message_handler(handle_document, pass_bot=True, content_types=["document"])
+    bot.register_message_handler(
+        handle_document, pass_bot=True, content_types=["document"]
+    )

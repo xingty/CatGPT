@@ -65,7 +65,9 @@ class Topic:
 
         return topic
 
-    async def list_topics(self, uid: int, chat_id: int, thread_id: int) -> list[types.Topic]:
+    async def list_topics(
+        self, uid: int, chat_id: int, thread_id: int
+    ) -> list[types.Topic]:
         topics = await self.storage.list_topics(uid, chat_id, thread_id)
         topic_ids = [topic.tid for topic in topics]
         messages = await self.get_messages(topic_ids)

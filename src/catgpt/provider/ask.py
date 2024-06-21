@@ -15,7 +15,10 @@ def get_provider(endpoint: Endpoint):
     module_name = endpoint.provider.value
     provider = providers.get(module_name, None)
 
-    if provider is None and Path(__file__).parent.joinpath(f"{module_name}.py").exists():
+    if (
+        provider is None
+        and Path(__file__).parent.joinpath(f"{module_name}.py").exists()
+    ):
         provider = importlib.import_module(f".{module_name}", __package__)
         providers[module_name] = provider
         return provider
@@ -53,4 +56,3 @@ async def ask(endpoint: Endpoint, body: dict):
         raise Exception("No messages")
 
     return await provider.ask(endpoint, body)
-

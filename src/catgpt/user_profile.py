@@ -22,7 +22,6 @@ class UserProfile:
         self.memory = {}
 
         if preset_file.exists():
-            print(preset_file)
             presets: [] = json.loads(preset_file.read_text())
             for preset in presets:
                 if "role" in preset and "prompt" in preset:
@@ -36,15 +35,15 @@ class UserProfile:
         return profile
 
     async def create(
-            self,
-            uid: int,
-            model: str,
-            endpoint: str,
-            prompt: str,
-            chat_type: int,
-            chat_id: int,
-            thread_id: int,
-            topic_id: int,
+        self,
+        uid: int,
+        model: str,
+        endpoint: str,
+        prompt: str,
+        chat_type: int,
+        chat_id: int,
+        thread_id: int,
+        topic_id: int,
     ):
         profile = types.Profile(
             uid=uid,
@@ -63,7 +62,9 @@ class UserProfile:
     def get_preset(self, preset_name: str):
         return self.presets.get(preset_name)
 
-    async def get_profile(self, uid: int, chat_id: int, thread_id: int) -> [types.Profile | None]:
+    async def get_profile(
+        self, uid: int, chat_id: int, thread_id: int
+    ) -> [types.Profile | None]:
         assert uid > 0, "invalid uid: " + str(uid)
         profile = await self.storage.get_profile(uid, chat_id, thread_id)
         if not profile:
@@ -87,7 +88,9 @@ class UserProfile:
         self.memory[key] = True
         return True
 
-    async def update(self, uid: int, chat_id: int, thread_id: int, profile: types.Profile):
+    async def update(
+        self, uid: int, chat_id: int, thread_id: int, profile: types.Profile
+    ):
         assert uid > 0, "invalid uid: " + str(uid)
         await self.storage.update(uid, chat_id, thread_id, profile)
 
@@ -107,7 +110,7 @@ class UserProfile:
         return await self.storage.get_conversation_id(uid, chat_type)
 
     async def update_conversation_id(
-            self, uid: int, chat_id: int, thread_id: int, conversation_id: int
+        self, uid: int, chat_id: int, thread_id: int, conversation_id: int
     ):
         assert uid > 0, "invalid uid: " + str(uid)
         profile = await self.get_profile(uid, chat_id, thread_id)

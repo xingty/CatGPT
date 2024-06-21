@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 
 class Message:
     def __init__(
-            self, role, content, message_id, chat_id, topic_id, ts, message_type=0
+        self, role, content, message_id, chat_id, topic_id, ts, message_type=0
     ):
         self.role = role
         self.content = content
@@ -22,7 +22,9 @@ class Message:
 
 
 class MessageHolder:
-    def __init__(self, content, message_id, user_id, chat_id, topic_id, reply_id, message_type=0):
+    def __init__(
+        self, content, message_id, user_id, chat_id, topic_id, reply_id, message_type=0
+    ):
         self.content = content
         self.message_id = message_id
         self.user_id = user_id
@@ -41,14 +43,14 @@ class MessageHolder:
 
 class Topic:
     def __init__(
-            self,
-            tid: int,
-            label: str,
-            chat_id: int,
-            user_id: int,
-            title: str,
-            generate_title: bool,
-            thread_id: int,
+        self,
+        tid: int,
+        label: str,
+        chat_id: int,
+        user_id: int,
+        title: str,
+        generate_title: bool,
+        thread_id: int,
     ):
         self.tid = tid
         self.title = title
@@ -68,15 +70,15 @@ class Topic:
 
 class Profile:
     def __init__(
-            self,
-            uid: int,
-            model: str,
-            endpoint: str,
-            prompt: str,
-            chat_type: int,
-            chat_id: int,
-            thread_id: int,
-            topic_id: int,
+        self,
+        uid: int,
+        model: str,
+        endpoint: str,
+        prompt: str,
+        chat_type: int,
+        chat_id: int,
+        thread_id: int,
+        topic_id: int,
     ):
         self.uid = uid
         self.model = model
@@ -141,7 +143,7 @@ class TopicStorage(ABC):
         pass
 
     async def get_message_holder(
-            self, user_id: int, chat_id: int
+        self, user_id: int, chat_id: int
     ) -> [MessageHolder | None]:
         pass
 
@@ -158,7 +160,9 @@ class ProfileStorage:
         pass
 
     @abstractmethod
-    async def get_profile(self, uid: int, chat_id: int, thread_id: int) -> [Profile | None]:
+    async def get_profile(
+        self, uid: int, chat_id: int, thread_id: int
+    ) -> [Profile | None]:
         pass
 
     @abstractmethod
