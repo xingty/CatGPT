@@ -133,6 +133,7 @@ async def do_reply(
     start = time.time()
     timeout = 1.8
     text_overflow = False
+    tmp_info = f"*{endpoint.name},   {model.lower()}*: \n\n"
     async for chunk in await ask.ask_stream(
         endpoint,
         {
@@ -154,7 +155,7 @@ async def do_reply(
         if (time.time() - start > timeout and len(buffered) >= 18) or finished:
             start = time.time()
             try:
-                message_text = escape(f"*{endpoint.name}*:\n{text}{buffered}")
+                message_text = escape(f"{tmp_info}{text}{buffered}")
                 if len(message_text) > MAX_TEXT_LENGTH:
                     text_overflow = True
                     continue
@@ -245,14 +246,15 @@ async def do_generate_title(convo: types.Topic, messages: list, uid: int, text: 
 
 
 async def handle_document(message: Message, bot: AsyncTeleBot):
-    print(message.content_type)
-    print(message.text)
-    print(message.caption)
-    print(message.document)
-
-    file = await bot.get_file(message.document.file_id)
-    content = await bot.download_file(file.file_path)
-    print(content)
+    print("coming soon...")
+    # print(message.content_type)
+    # print(message.text)
+    # print(message.caption)
+    # print(message.document)
+    #
+    # file = await bot.get_file(message.document.file_id)
+    # content = await bot.download_file(file.file_path)
+    # print(content)
 
 
 def message_check(func):
