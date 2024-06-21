@@ -18,15 +18,31 @@ CatGPt is a Telegram bot that integrates with OpenAI's api for people who like t
   ```shell
   git clone https://github.com/xingty/CatGPT
   cd CatGPT
-  pip3 install -r requirements.txt
-  
-  pip3 install . # 
-  cat-gpt --config your-config-file.json
   ```
   
-* Install from release files
+  pip: 
   
-   
+  ```shell
+  pip3 install -r requirements.txt
+  
+  python3 start.py --config ${config_file}
+  ```
+  
+  pdm:
+  
+	  ```shell
+	  pdm install
+	  pdm run start.py --config ${config_file}
+	  ```
+
+* Install from release files
+
+  Download the latest build at xxx
+  
+  ```shell
+  pip3 install mqgpt-${version}-py3-none-any-whl
+  mqgpt --config ${config_file}
+  ```
 
 
  ### Commands
@@ -84,13 +100,13 @@ CatGPt is a Telegram bot that integrates with OpenAI's api for people who like t
 
   Display user's profile (including the current endpoint, model, and topic)
 
-* **/endpoints** `[endpoint name]`
+* **/endpoint** `[endpoint name]`
 
   Display all endpoints.
 
 ​	You can also swtich to an endpoint directly with the command `/endpoints [your endpoint name]`
 
-* **/models** `[model name]`
+* **/model `[model name]`
 
   Display all the support models of the endpoint.
 
@@ -185,3 +201,9 @@ CatGPt is a Telegram bot that integrates with OpenAI's api for people who like t
 1. Talk to [BotFather](https://t.me/BotFather)
 2. Use the command `/newbot` to create a new bot
 3. Follows the guideline of BotFather and then get the access token of your bot
+
+
+
+### Thanks
+
+The idea of this project was inspired by YiHong0618's **[tg_bot_collections](https://github.com/yihong0618/tg_bot_collections)**, thanks [YiHong0618](https://github.com/yihong0618).
