@@ -41,7 +41,7 @@ async def create_topic_and_update_profile(
         generate_title=title is None or len(title) == 0,
         thread_id=thread_id
     )
-    await profiles.update_conversation_id(uid, chat_id, convo.tid)
+    await profiles.update_conversation_id(uid, chat_id, thread_id, convo.tid)
     return convo
 
 
