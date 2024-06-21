@@ -122,14 +122,17 @@ async def register_commands(bot: AsyncTeleBot) -> None:
             return
         handler = action_provider.get(target)
         if handler is not None:
-            await handler(
-                bot=bot,
-                operation=operation,
-                msg_ids=message_ids,
-                chat_id=chat_id,
-                uid=uid,
-                message=message,
-            )
+            try:
+                await handler(
+                    bot=bot,
+                    operation=operation,
+                    msg_ids=message_ids,
+                    chat_id=chat_id,
+                    uid=uid,
+                    message=message,
+                )
+            except Exception as e:
+                logging.exception(e)
 
 
 def all_modules() -> list[str]:
@@ -243,6 +246,9 @@ async def share(convo: types.Topic):
 
 
 async def send_file(bot: AsyncTeleBot, message: Message, convo: types.Topic):
+    if len(convo.messages) == 0:
+        return
+
     messages: list[types.Message] = convo.messages or []
     messages = [
         msg
