@@ -1,0 +1,37 @@
+name: Build and release
+on: 
+  push:
+    tags:
+      - 'v*'
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      packages: write
+
+    strategy:
+      matrix:
+        python-version: ["3.10"]
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Get version
+        id: get_version
+        uses: battila7/get-version-action@v2.2.0
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Setup PDM
+        uses: pdm-project/setup-pdm@v4
+      - name: Build
+        run: |
+          pdm install
+          pdm build
+      - name: Upload release files
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/*
