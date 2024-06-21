@@ -31,7 +31,7 @@ class Endpoint:
         assert len(api_url) > 0, "api url can't be empty"
         assert len(secret_key) > 0, "secret key can't be empty"
         assert len(models) > 0, "models can't be empty"
-        assert provider in ["openai", "chatgpt", "qwen"], "provider not supported"
+        assert provider in ["openai", "gemini", "qwen"], "provider not supported"
 
         self.name = name
         self.api_url = api_url
@@ -54,13 +54,16 @@ class Endpoint:
             name={self.name}, 
             api_url={self.api_url}, 
             default_model={self.default_model}, 
-            models={self.models}
+            models={self.models},
+            default_endpoint={self.default_endpoint},
+            generate_title={self.generate_title},
+            provider={self.provider}
         )"""
 
 
 class Provider(enum.Enum):
-    OPENAI = "openai"
-    GEMINI = "chatgpt"
+    OPENAI = "oai"
+    GEMINI = "gemini"
     QWEN = "qwen"
 
 

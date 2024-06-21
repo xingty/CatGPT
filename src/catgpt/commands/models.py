@@ -25,7 +25,7 @@ async def handle_models(message: Message, bot: AsyncTeleBot):
     bot_name = await get_bot_name()
     endpoint = config.get_endpoint(profile.endpoint or "None")
 
-    text = message.text.replace("/models", "").replace(bot_name, "").strip()
+    text = message.text.replace("/model", "").replace(bot_name, "").strip()
     models = endpoint.models or []
     # fast switch
     if len(text) > 0:
@@ -179,7 +179,7 @@ def register(bot: AsyncTeleBot, decorator, action_provider):
 
 
 action = {
-    "name": "models",
-    "description": "list models: [model_name]",
+    "name": "model",
+    "description": "display models: [model_name]",
     "order": 60,
 }

@@ -6,7 +6,7 @@ from ..context import profiles, config, get_bot_name, topic
 from ..types import Endpoint, MessageType
 from ..utils.text import get_timeout_from_text, MAX_TEXT_LENGTH
 from . import create_convo_and_update_profile
-from .. import ask
+from ..provider import ask
 from ..utils.md2tgmd import escape
 from ..storage import types
 from ..utils import tg_image
@@ -94,7 +94,7 @@ async def handle_message(message: Message, bot: AsyncTeleBot) -> None:
     prompt_message.media_url = img_data
     messages.append(prompt_message)
 
-    message_payload = ask.message2payload(endpoint, messages)
+    # message_payload = ask.message2payload(endpoint, messages)
     reply_msg = await bot.reply_to(message=message, text="A smart cat is thinking...")
 
     message.text = message_text if msg_type == MessageType.TEXT else img_data
@@ -102,14 +102,14 @@ async def handle_message(message: Message, bot: AsyncTeleBot) -> None:
 
     text = ""
     try:
-        text = await do_reply(endpoint, model, message_payload, reply_msg, bot)
+        text = await do_reply(endpoint, model, messages, reply_msg, bot)
         reply_msg.text = text
         await topic.append_messages(convo_id, message, reply_msg)
 
         try:
             generate_title = convo.generate_title
             if generate_title:
-                await do_generate_title(convo, message_payload, uid, text)
+                await do_generate_title(convo, messages, uid, text)
         except Exception as ie:
             print(ie)
     except Exception as e:
@@ -141,7 +141,11 @@ async def do_reply(
         },
     ):
         content = chunk["content"]
-        buffered += content if content is not None else ""
+        if not content:
+            print("the content of the chunk is empty", chunk)
+            continue
+
+        buffered += content
         finished = chunk["finished"] == "stop"
 
         if text_overflow:
@@ -210,14 +214,30 @@ async def do_generate_title(convo: types.Topic, messages: list, uid: int, text: 
     if endpoint is None:
         return
 
-    messages += [
-        {"role": "assistant", "content": text},
-        {
-            "role": "user",
-            "content": "Please generate a title for this conversation without any lead-in, punctuation, quotation marks, periods, symbols, bold text, or additional text. Remove enclosing quotation marks. Please only return the title without any additional info.",
-        },
+
+    title_prompt = "Please generate a title for this conversation without any lead-in, punctuation, quotation marks, periods, symbols, bold text, or additional text. Remove enclosing quotation marks. Please only return the title without any additional info."
+
+    title_messages = messages + [
+        types.Message(
+            role="assistant",
+            content=text,
+            message_id=0,
+            chat_id=0,
+            topic_id=0,
+            ts=int(time.time()),
+            message_type=0,
+        ),
+        types.Message(
+            role="user",
+            content=title_prompt,
+            message_id=0,
+            chat_id=0,
+            topic_id=0,
+            ts=int(time.time()),
+            message_type=0,
+        ),
     ]
-    title = await ask.ask(endpoint, {"messages": messages})
+    title = await ask.ask(endpoint, {"messages": title_messages})
 
     convo.generate_title = False
     convo.title = title

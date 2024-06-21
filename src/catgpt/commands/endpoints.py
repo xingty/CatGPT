@@ -8,7 +8,7 @@ from ..context import Endpoint
 
 async def handle_endpoints(message: Message, bot: AsyncTeleBot):
     bot_name = await get_bot_name()
-    endpoint_name = message.text.replace("/endpoints", "").replace(bot_name, "").strip()
+    endpoint_name = message.text.replace("/endpoint", "").replace(bot_name, "").strip()
     uid = message.from_user.id
     # fast switch
     if len(endpoint_name) > 0:
@@ -104,8 +104,7 @@ def register(bot: AsyncTeleBot, decorator, action_provider):
 
 
 action = {
-    "name": "endpoints",
-    "description": "list endpoints: [endpoint_name]",
-    "delete_after_invoke": True,
+    "name": "endpoint",
+    "description": "display endpoints: [endpoint_name]",
     "order": 50,
 }

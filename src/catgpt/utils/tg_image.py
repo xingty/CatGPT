@@ -1,7 +1,7 @@
+import base64
+
 from telebot.async_telebot import AsyncTeleBot
 from telebot import types as tg_types
-
-from ..storage import types
 
 
 def find_candidate(photo_list: list[tg_types.PhotoSize], width=640, height: int = 480):
@@ -24,3 +24,11 @@ async def download_image(
     file = await bot.get_file(photo.file_id)
 
     return await bot.download_file(file.file_path)
+
+
+def encode_image(bin_data: bytes) -> str:
+    return base64.b64encode(bin_data).decode("utf-8")
+
+
+def decode_image(base64_str: str) -> bytes:
+    return base64.b64decode(base64_str)
