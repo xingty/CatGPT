@@ -160,6 +160,7 @@ CatGPt is a Telegram bot that integrates with OpenAI's api for people who like t
   endpint:
 
   * `name`: endpoint name
+  * `provider`:  **openai** or **gemini**
   * `api_url`: api url. e.g. `https://api.openai.com/v1`
   * `secret_key`: secret_key
   * `models`: list of supporting models for this endpoint
@@ -193,6 +194,7 @@ CatGPt is a Telegram bot that integrates with OpenAI's api for people who like t
       "name": "endpoint_1",
       "api_url": "https://api.openai.com",
       "secret_key": "YOUR_API_KEY",
+      "provider": "openai",
       "models": [
         "gpt-4o",
         "gpt-4-turbo-2024-04-09",
@@ -226,3 +228,15 @@ Each topic in a group has its own profile, it means that all configuration in to
 ### Thanks
 
 The idea of this project was inspired by YiHong0618's **[tg_bot_collections](https://github.com/yihong0618/tg_bot_collections)**, thanks a lot for [YiHong0618](https://github.com/yihong0618).
+
+
+
+### Buy me a coffee
+
+爱发电：[![s](https://img.shields.io/badge/Buyme-food-DB94A2)](https://afdian.net/a/versatile_mq)
+
+
+
+### License
+
+MIT
