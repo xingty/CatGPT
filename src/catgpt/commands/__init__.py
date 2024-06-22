@@ -4,16 +4,16 @@ import logging
 from pathlib import Path
 from io import BytesIO
 
-from telebot.types import Message, InputFile
+from telebot.types import Message, InputFile, InlineKeyboardButton, InlineKeyboardMarkup
 from telebot.async_telebot import AsyncTeleBot
 from telebot.types import BotCommand
 from telebot.asyncio_helper import RequestTimeout
 
 from ..context import profiles, config, topic, users
 from ..utils.md2tgmd import escape
-from ..utils.text import messages_to_segments, decode_message_id
+from ..utils.text import messages_to_segments, decode_message_id, encode_message_id
 from ..utils.prompt import get_prompt
-from ..share.github import create_or_update_issue
+from .. import share
 from ..storage import types
 from ..types import ChatType
 
@@ -193,22 +193,13 @@ async def get_profile_text(profile: types.Profile, chat_type: str):
     return text
 
 
-async def share(convo: types.Topic):
-    messages = convo.messages
-    body = messages_to_segments(messages, 65535)[0]
-
-    return await create_or_update_issue(
-        owner=config.share_info.get("owner"),
-        repo=config.share_info.get("repo"),
-        token=config.share_info.get("token"),
-        title=convo.title,
-        label=convo.label,
-        body=body,
-    )
-
-
 async def send_file(bot: AsyncTeleBot, message: Message, convo: types.Topic):
     if len(convo.messages) == 0:
+        await bot.send_message(
+            chat_id=message.chat.id,
+            parse_mode="MarkdownV2",
+            text=escape("No messages found in this topic"),
+        )
         return
 
     messages: list[types.Message] = convo.messages or []
@@ -225,5 +216,61 @@ async def send_file(bot: AsyncTeleBot, message: Message, convo: types.Topic):
     await bot.send_document(
         chat_id=message.chat.id,
         document=file,
+        message_thread_id=message.message_thread_id,
+    )
+
+
+async def handle_share(
+    bot: AsyncTeleBot,
+    operation: str,
+    msg_ids: list[int],
+    chat_id: int,
+    uid: int,
+    message: Message,
+):
+    convo = await topic.get_topic(int(operation))
+    message_id = msg_ids[0]
+    if convo is None:
+        await bot.send_message(
+            chat_id=chat_id,
+            reply_to_message_id=message_id,
+            parse_mode="MarkdownV2",
+            text=escape(f"topic not found"),
+            message_thread_id=message.message_thread_id,
+        )
+        return
+
+    if len(share.share_providers) == 0:
+        await bot.send_message(
+            chat_id=chat_id,
+            reply_to_message_id=message_id,
+            parse_mode="MarkdownV2",
+            text=escape(f"Please set share info in the config file"),
+            message_thread_id=message.message_thread_id,
+        )
+        return
+
+    encoded_msg_id = encode_message_id(msg_ids + [message.message_id])
+    context = f"{encoded_msg_id}:{message.chat.id}:{uid}"
+    buttons = []
+    items = []
+    for key in share.share_providers:
+        if len(items) == 2:
+            buttons.append(items)
+            items = []
+
+        items.append(
+            InlineKeyboardButton(key, callback_data=f"do_share:{key}_{operation}:{context}")
+        )
+
+    if len(items) > 0:
+        buttons.append(items)
+
+    await bot.send_message(
+        chat_id=chat_id,
+        reply_to_message_id=message_id,
+        parse_mode="MarkdownV2",
+        text="Select a share provider: ",
+        reply_markup=InlineKeyboardMarkup(buttons),
         message_thread_id=message.message_thread_id,
     )

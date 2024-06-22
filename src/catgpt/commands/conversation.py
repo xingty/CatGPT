@@ -2,9 +2,9 @@ from telebot.async_telebot import AsyncTeleBot
 from telebot.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
 
 from ..utils.md2tgmd import escape
-from ..utils.text import encode_message_id, messages_to_segments
-from ..context import profiles, config, topic, get_bot_name
-from . import share, send_file
+from ..utils.text import messages_to_segments
+from ..context import profiles, topic, get_bot_name
+from . import share, send_file, handle_share
 from ..storage import types
 
 
@@ -33,7 +33,42 @@ async def handle_conversation(message: Message, bot: AsyncTeleBot):
         return
 
     if instruction == "share":
-        await _do_share(convo, bot, message)
+        if len(convo.messages) == 0:
+            await bot.send_message(
+                chat_id=message.chat.id,
+                parse_mode="MarkdownV2",
+                text=escape("No messages found in this topic"),
+                message_thread_id=message.message_thread_id,
+            )
+            return
+
+        size = len(share.share_providers)
+        if size == 0:
+            await bot.send_message(
+                chat_id=message.chat.id,
+                parse_mode="MarkdownV2",
+                text=escape(f"Please set share info in the config file"),
+                message_thread_id=message.message_thread_id,
+            )
+        elif size == 1:
+            provider_name = next(iter(share.share_providers))
+            await do_share(
+                bot=bot,
+                operation=f"{provider_name}_{convo_id}",
+                msg_ids=[message.message_id],
+                chat_id=message.chat.id,
+                uid=uid,
+                message=message,
+            )
+        else:
+            await handle_share(
+                bot=bot,
+                operation=str(convo_id),
+                msg_ids=[message.message_id],
+                chat_id=message.chat.id,
+                uid=uid,
+                message=message,
+            )
     elif instruction == "download":
         await send_file(bot, message, convo)
     else:
@@ -109,92 +144,35 @@ async def handle_download(
     await bot.delete_messages(message.chat.id, msg_ids + [message.message_id])
 
 
-async def handle_share(
-    bot: AsyncTeleBot,
-    operation: str,
-    msg_ids: list[int],
-    chat_id: int,
-    uid: str,
-    message: Message,
-):
-    convo = await topic.get_topic(int(operation))
-    message_id = msg_ids[0]
-    if convo is None:
-        await bot.send_message(
-            chat_id=chat_id,
-            reply_to_message_id=message_id,
-            parse_mode="MarkdownV2",
-            text=escape(f"topic not found"),
-            message_thread_id=message.message_thread_id,
-        )
-        return
-
-    if not config.share_info:
-        await bot.send_message(
-            chat_id=chat_id,
-            reply_to_message_id=message_id,
-            parse_mode="MarkdownV2",
-            text=escape(f"Please set share info in config"),
-            message_thread_id=message.message_thread_id,
-        )
-        return
-
-    encoded_msg_id = encode_message_id(msg_ids + [message.message_id])
-    context = f"{encoded_msg_id}:{message.chat.id}:{uid}"
-    buttons = [
-        [
-            InlineKeyboardButton(
-                "yes", callback_data=f"do_share:yes_{operation}:{context}"
-            ),
-            InlineKeyboardButton("no", callback_data=f"do_share:no:{context}"),
-        ]
-    ]
-
-    await bot.send_message(
-        chat_id=chat_id,
-        reply_to_message_id=message_id,
-        parse_mode="MarkdownV2",
-        text=escape(f"Share this topic `<{convo.title}>` to github?"),
-        reply_markup=InlineKeyboardMarkup(buttons),
-        message_thread_id=message.message_thread_id,
-    )
-
-
 async def do_share(
     bot: AsyncTeleBot,
     operation: str,
     msg_ids: list[int],
     chat_id: int,
-    uid: str,
+    uid: int,
     message: Message,
 ):
-    if operation == "no":
+    segments = operation.split("_")
+    provider = share.share_providers.get(segments[0])
+    if not provider:
+        await bot.send_message(
+            chat_id=chat_id,
+            parse_mode="MarkdownV2",
+            text=escape(f"Unknown share provider: {segments[0]}"),
+        )
         await bot.delete_message(chat_id, message.message_id)
-    else:
-        convo_id = int(operation.split("_")[1])
-        convo = await topic.get_topic(convo_id, fetch_messages=True)
-        await _do_share(convo, bot, message)
-        await bot.delete_messages(chat_id, msg_ids + [message.message_id])
+        return
 
+    thread = await topic.get_topic(topic_id=int(segments[1]), fetch_messages=True)
+    html_url = await provider.share(thread)
 
-async def _do_share(convo: types.Topic, bot: AsyncTeleBot, message: Message):
-    html_url = await share(convo)
-    try:
-        await bot.send_message(
-            chat_id=message.chat.id,
-            parse_mode="MarkdownV2",
-            text=escape(f"Title: {convo.title}\nShare link: {html_url}"),
-            disable_web_page_preview=False,
-            message_thread_id=message.message_thread_id,
-        )
-    except Exception as e:
-        await bot.send_message(
-            chat_id=message.chat.id,
-            parse_mode="MarkdownV2",
-            text=str(e),
-            disable_web_page_preview=True,
-            message_thread_id=message.message_thread_id,
-        )
+    await bot.send_message(
+        chat_id=chat_id,
+        parse_mode="MarkdownV2",
+        text=escape(f"share link: {html_url}"),
+    )
+
+    await bot.delete_messages(chat_id, msg_ids + [message.message_id])
 
 
 def register(bot: AsyncTeleBot, decorator, action_provider):

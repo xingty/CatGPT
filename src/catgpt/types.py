@@ -1,4 +1,5 @@
 import enum
+import random
 
 MODEL_MAPPING = {
     "gpt-4o": ["text", "photo"],
@@ -17,21 +18,21 @@ MODEL_MAPPING = {
 class Endpoint:
 
     def __init__(
-        self,
-        name: str,
-        api_url: str,
-        secret_key: str,
-        models: list[str],
-        provider: str = "openai",
-        default_model: str = None,
-        default_endpoint: bool = False,
-        generate_title: bool = True,
+            self,
+            name: str,
+            api_url: str,
+            secret_key: str,
+            models: list[str],
+            provider: str = "openai",
+            default_model: str = None,
+            default_endpoint: bool = False,
+            generate_title: bool = True,
     ):
         assert len(name) > 0, "endpoint name can't be empty"
         assert len(api_url) > 0, "api url can't be empty"
         assert len(secret_key) > 0, "secret key can't be empty"
         assert len(models) > 0, "models can't be empty"
-        assert provider in ["openai", "gemini", "qwen"], "provider not supported"
+        assert provider in ["openai", "gemini"], "provider not supported"
 
         self.name = name
         self.api_url = api_url
@@ -61,10 +62,51 @@ class Endpoint:
         )"""
 
 
+class Configuration:
+
+    def __init__(self):
+        self.access_key: str = ""
+        self.proxy_url: str = ""
+        self.share_info = None
+        self.endpoints: [Endpoint] = []
+
+    def get_endpoints(self) -> [Endpoint]:
+        return self.endpoints
+
+    def get_default_endpoint(self) -> Endpoint:
+        for endpoint in self.get_endpoints():
+            if endpoint.default_endpoint:
+                return endpoint
+
+        return self.get_endpoints()[0]
+
+    def get_endpoint(self, endpoint_name: str) -> Endpoint | None:
+        for endpoint in self.get_endpoints():
+            if endpoint.name == endpoint_name:
+                return endpoint
+
+        return None
+
+    def get_title_endpoint(self) -> [Endpoint]:
+        endpoints = self.get_endpoints()
+
+        endpoints = [endpoint for endpoint in endpoints if endpoint.generate_title]
+
+        return random.choices(endpoints)
+
+    def get_models(self) -> list[str]:
+        endpoints = self.get_endpoints()
+        models = set()
+        for endpoint in endpoints:
+            models.update(endpoint.models)
+
+        return sorted(models)
+
+
 class Provider(enum.Enum):
     OPENAI = "oai"
     GEMINI = "gemini"
-    QWEN = "qwen"
+    # QWEN = "qwen"
 
 
 class MessageType(enum.Enum):
@@ -87,3 +129,7 @@ class ChatType(enum.Enum):
             return ChatType.CHANNEL
 
         return ChatType.GROUP
+
+
+class ShareType(enum.Enum):
+    GITHUB = "github"

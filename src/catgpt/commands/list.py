@@ -5,7 +5,7 @@ from ..utils.md2tgmd import escape
 from ..utils.text import encode_message_id
 from ..context import profiles, topic
 from ..utils.text import messages_to_segments, MAX_TEXT_LENGTH
-from . import share, send_file
+from . import send_file, handle_share
 
 
 async def show_conversation_list(
@@ -109,15 +109,23 @@ async def do_convo_change(
         await bot.delete_messages(chat_id, [message.message_id] + msg_ids)
         return
     elif real_op == "sr":  # share this conversation to a share provider
-        if len(convo.messages) > 0:
-            html_url = await share(convo)
+        if len(convo.messages) == 0:
             await bot.send_message(
                 chat_id=chat_id,
                 parse_mode="MarkdownV2",
-                text=escape(f"Share link: {html_url}"),
-                disable_web_page_preview=False,
-                message_thread_id=message.message_thread_id,
+                text=escape(f"topic `{conversation_id}` is empty"),
             )
+            await bot.delete_message(chat_id, message.message_id)
+        else:
+            await handle_share(
+                bot=bot,
+                operation=str(conversation_id),
+                msg_ids=[message.message_id],
+                chat_id=chat_id,
+                uid=uid,
+                message=message,
+            )
+        return
     elif real_op == "dl":
         await send_file(bot, message, convo)
     elif real_op == "d":  # delete this conversation

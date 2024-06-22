@@ -3,53 +3,12 @@ from telebot.async_telebot import AsyncTeleBot, asyncio_helper
 from pathlib import Path
 
 from .user_profile import UserProfile, Users
+from .types import Endpoint, Configuration
+from . import share
 from .topic import Topic
 from . import storage
-from .types import Endpoint
 
 import json
-import random
-
-
-class Configuration:
-
-    def __init__(self):
-        self.access_key: str = ""
-        self.proxy_url: str = ""
-        self.share_info = None
-        self.endpoints: [Endpoint] = []
-
-    def get_endpoints(self) -> [Endpoint]:
-        return self.endpoints
-
-    def get_default_endpoint(self) -> Endpoint:
-        for endpoint in self.get_endpoints():
-            if endpoint.default_endpoint:
-                return endpoint
-
-        return self.get_endpoints()[0]
-
-    def get_endpoint(self, endpoint_name: str) -> Endpoint | None:
-        for endpoint in self.get_endpoints():
-            if endpoint.name == endpoint_name:
-                return endpoint
-
-        return None
-
-    def get_title_endpoint(self) -> [Endpoint]:
-        endpoints = self.get_endpoints()
-
-        endpoints = [endpoint for endpoint in endpoints if endpoint.generate_title]
-
-        return random.choices(endpoints)
-
-    def get_models(self) -> list[str]:
-        endpoints = self.get_endpoints()
-        models = set()
-        for endpoint in endpoints:
-            models.update(endpoint.models)
-
-        return sorted(models)
 
 
 config = Configuration()
@@ -89,6 +48,8 @@ async def init_configuration(options):
         token=c["tg_token"],
         disable_web_page_preview=True,
     )
+
+    share.init_providers(c.get("share", []), config)
 
 
 async def init_datasource(options):
