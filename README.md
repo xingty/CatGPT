@@ -155,6 +155,8 @@ CatGPt is a Telegram bot that integrates with OpenAI's api for people who like t
 
 * `proxy`: a http or https proxy server. the chatbot will run behind the proxy server if it's supplied
 
+* `respond_group_message`: If true, the bot will respond to group messages even without being mentioned.  default: `false`
+
 * `endpoinds`: your endpoints
 
   endpint:
@@ -180,6 +182,7 @@ CatGPt is a Telegram bot that integrates with OpenAI's api for people who like t
   "tg_token": "YOUR_TELEGRAM_BOT_TOKEN",
   "access_key": "Specify Access Key to use this bot",
   "proxy": "http://proxy:port",
+  "respond_group_message": false,
   "share": [
     {
       "name": "notes",

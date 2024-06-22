@@ -2,6 +2,7 @@
   "tg_token": "YOUR_TELEGRAM_BOT_TOKEN",
   "access_key": "Specify Access Key to use this bot",
   "proxy": "http://proxy:port",
+  "respond_group_message": false,
   "share": {
     "repo": "github repo name",
     "owner": "github username",
