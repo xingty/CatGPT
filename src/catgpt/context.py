@@ -33,6 +33,7 @@ async def init_configuration(options):
     config.access_key = c["access_key"]
     config.proxy_url = c.get("proxy", None)
     config.share_info = c.get("share", None)
+    config.response_group_message = c.get("respond_group_message", False)
 
     endpoints = c.get("endpoints", [])
     assert len(endpoints) > 0, "endpoints is required"

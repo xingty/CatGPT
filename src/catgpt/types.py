@@ -18,15 +18,15 @@ MODEL_MAPPING = {
 class Endpoint:
 
     def __init__(
-            self,
-            name: str,
-            api_url: str,
-            secret_key: str,
-            models: list[str],
-            provider: str = "openai",
-            default_model: str = None,
-            default_endpoint: bool = False,
-            generate_title: bool = True,
+        self,
+        name: str,
+        api_url: str,
+        secret_key: str,
+        models: list[str],
+        provider: str = "openai",
+        default_model: str = None,
+        default_endpoint: bool = False,
+        generate_title: bool = True,
     ):
         assert len(name) > 0, "endpoint name can't be empty"
         assert len(api_url) > 0, "api url can't be empty"
@@ -69,6 +69,7 @@ class Configuration:
         self.proxy_url: str = ""
         self.share_info = None
         self.endpoints: [Endpoint] = []
+        self.response_group_message = False
 
     def get_endpoints(self) -> [Endpoint]:
         return self.endpoints

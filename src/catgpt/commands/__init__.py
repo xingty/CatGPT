@@ -260,7 +260,9 @@ async def handle_share(
             items = []
 
         items.append(
-            InlineKeyboardButton(key, callback_data=f"do_share:{key}_{operation}:{context}")
+            InlineKeyboardButton(
+                key, callback_data=f"do_share:{key}_{operation}:{context}"
+            )
         )
 
     if len(items) > 0:

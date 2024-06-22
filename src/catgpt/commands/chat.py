@@ -42,9 +42,10 @@ async def send_message(bot: AsyncTeleBot, message: Message, text: str):
 async def handle_message(message: Message, bot: AsyncTeleBot) -> None:
     message_text = message.text
     if message.chat.type in ["group", "supergroup", "gigagroup", "channel"]:
-        bot_name = await get_bot_name()
-        message_text = message_text.replace(bot_name, "").strip()
-        message.text = message_text
+        if await is_mention_me(message):
+            bot_name = await get_bot_name()
+            message_text = message_text.replace(bot_name, "").strip()
+            message.text = message_text
 
     uid = message.from_user.id
     chat_id = message.chat.id
@@ -259,7 +260,7 @@ async def handle_document(message: Message, bot: AsyncTeleBot):
 def message_check(func):
     async def wrapper(message: Message, bot: AsyncTeleBot):
         if message.chat.type in ["group", "supergroup", "gigagroup", "channel"]:
-            if not await is_mention_me(message):
+            if not config.response_group_message and not await is_mention_me(message):
                 return
 
         await func(message, bot)

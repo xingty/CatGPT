@@ -31,7 +31,7 @@ class GithubProvider:
         params = {"labels": label, "state": "open"}
         async with aiohttp.ClientSession() as session:
             async with session.get(
-                    url, headers=headers, params=params, proxy=self.proxy
+                url, headers=headers, params=params, proxy=self.proxy
             ) as response:
                 if not response.ok:
                     raise Exception(f"Failed to search issues: {response.text}")
@@ -47,7 +47,7 @@ class GithubProvider:
 
         async with aiohttp.ClientSession() as session:
             async with session.post(
-                    url, headers=headers, json=data, proxy=self.proxy
+                url, headers=headers, json=data, proxy=self.proxy
             ) as response:
                 if not response.ok:
                     raise Exception(f"Failed to create issue: {response.text}")
@@ -62,7 +62,7 @@ class GithubProvider:
 
         async with aiohttp.ClientSession() as session:
             async with session.patch(
-                    url, headers=headers, json=data, proxy=self.proxy
+                url, headers=headers, json=data, proxy=self.proxy
             ) as response:
                 if not response.ok:
                     raise Exception(f"Failed to update issue: {response.text}")
@@ -72,9 +72,7 @@ class GithubProvider:
     async def create_or_update_issue(self, title, body, label):
         issue = await self.get_github_issue(label)
         if issue:
-            issue = await self.update_github_issue(
-                issue["number"], title, body
-            )
+            issue = await self.update_github_issue(issue["number"], title, body)
         else:
             issue = await self.create_github_issue(title, body, label)
 
