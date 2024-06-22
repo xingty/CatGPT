@@ -14,7 +14,7 @@ from ..utils.md2tgmd import escape
 from ..utils.text import messages_to_segments, decode_message_id
 from ..utils.prompt import get_prompt
 from ..share.github import create_or_update_issue
-from ..storage import types, tx
+from ..storage import types
 from ..types import ChatType
 
 

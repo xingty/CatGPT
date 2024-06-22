@@ -6,7 +6,7 @@ from ..context import profiles, config, get_bot_name, topic
 from ..types import Endpoint, MessageType
 from ..utils.text import get_timeout_from_text, MAX_TEXT_LENGTH
 from . import create_convo_and_update_profile
-from ..provider import ask
+from ..provider import ask, ask_stream
 from ..utils.md2tgmd import escape
 from ..storage import types
 from ..utils import tg_image
@@ -134,7 +134,7 @@ async def do_reply(
     timeout = 1.8
     text_overflow = False
     tmp_info = f"*{endpoint.name},   {model.lower()}*: \n\n"
-    async for chunk in await ask.ask_stream(
+    async for chunk in await ask_stream(
         endpoint,
         {
             "model": model,
@@ -237,7 +237,7 @@ async def do_generate_title(convo: types.Topic, messages: list, uid: int, text: 
             message_type=0,
         ),
     ]
-    title = await ask.ask(endpoint, {"messages": title_messages})
+    title = await ask(endpoint, {"messages": title_messages})
 
     convo.generate_title = False
     convo.title = title
