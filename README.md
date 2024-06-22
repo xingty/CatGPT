@@ -165,18 +165,29 @@ CatGPt is a Telegram bot that integrates with OpenAI's api for people who like t
   * `models`: list of supporting models for this endpoint
   * `generate_title`: If `true`, the endpoint will be used to automatically generate titles for topics that lack one, based on their chat history."
 
-* `share`: a share provider(only supports github c)
+* `share`: a share provider(only supports github currently)
+
+  * name: `require`, an identification of your provider
+  * type: `github`
+  * repo: the repo name of your github accout 
+  * owner: github username
+  * token: your github personal token
+
 
 ```json
 {
   "tg_token": "YOUR_TELEGRAM_BOT_TOKEN",
   "access_key": "Specify Access Key to use this bot",
   "proxy": "http://proxy:port",
-  "share": {
-    "repo": "github repo name",
-    "owner": "github username",
-    "token": "github access token"
-  },
+  "share": [
+    {
+      "name": "notes",
+      "type": "github",
+      "repo": "name of your repo",
+      "owner": "github username",
+      "token": "your github personal token"
+    }
+  ],
   "endpoints": [
     {
       "name": "endpoint_1",
@@ -193,6 +204,14 @@ CatGPt is a Telegram bot that integrates with OpenAI's api for people who like t
   ]
 }
 ```
+
+
+
+### Using in Telegram group that enables topics
+
+Each topic in a group has its own profile, it means that all configuration in topics are isolated. 
+
+![topic in group](assets/group.png)
 
 
 
