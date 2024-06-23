@@ -3,6 +3,7 @@ import uuid
 from telebot import types as tg_types
 
 from .storage import types, tx
+from .types import MessageType
 
 
 class Topic:
@@ -18,7 +19,7 @@ class Topic:
         user_message: tg_types.Message,
         assistant_message: tg_types.Message,
     ):
-        msg_type = user_message.content_type
+        msg_type = MessageType[user_message.content_type.upper()]
         msg = types.Message(
             role="user",
             content=user_message.text,
@@ -26,9 +27,9 @@ class Topic:
             chat_id=user_message.chat.id,
             ts=user_message.date,
             topic_id=topic_id,
-            message_type=0 if msg_type == "text" else 1,
+            message_type=0 if msg_type.is_text() else msg_type.value,
         )
-        if msg_type == "photo":
+        if msg_type.is_media():
             msg.media_url = user_message.text
             msg.content = user_message.caption
 

@@ -6,6 +6,7 @@ from pathlib import Path
 
 from ..storage import Datasource, tx, Topic
 from ..storage import types
+from ..types import MessageType
 
 VERSION = [
     {
@@ -94,7 +95,7 @@ class Sqlite3TopicStorage(types.TopicStorage, tx.Transactional):
         tuples = []
         for m in message:
             content = m.content
-            if m.message_type == 1:
+            if m.message_type > 0:
                 content = f"{m.media_url},{content}"
 
             t = (

@@ -3,6 +3,7 @@ from openai import AsyncOpenAI
 from ..storage import types
 from ..context import Endpoint
 from ..utils.prompt import get_system_prompt
+from ..types import MessageType
 
 
 def inject_system_prompt_if_need(messages: list, model: str):
@@ -17,7 +18,7 @@ def inject_system_prompt_if_need(messages: list, model: str):
 def message2payload(messages: [types.Message]) -> list[dict]:
     messages_payload = []
     for m in messages:
-        if m.message_type == 0:
+        if m.message_type in [MessageType.TEXT.value, MessageType.DOCUMENT.value]:
             messages_payload.append({"role": m.role, "content": m.content})
         else:
             content = []

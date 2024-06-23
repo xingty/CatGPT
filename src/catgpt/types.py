@@ -12,6 +12,8 @@ MODEL_MAPPING = {
     "gpt-3.5-turbo": ["text"],
     "gpt-3.5-turbo-0301": ["text"],
     "gpt-4-0613": ["text"],
+    "gemini-1.5-flash": ["text", "photo"],
+    "gemini-1.5-pro": ["text", "photo"],
 }
 
 
@@ -114,6 +116,14 @@ class MessageType(enum.Enum):
     TEXT = 0
     PHOTO = 1
     AUDIO = 2
+    VIDEO = 3
+    DOCUMENT = 4
+
+    def is_text(self):
+        return self == MessageType.TEXT or self == MessageType.DOCUMENT
+
+    def is_media(self):
+        return self in [MessageType.PHOTO, MessageType.AUDIO, MessageType.VIDEO]
 
 
 class ChatType(enum.Enum):

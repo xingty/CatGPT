@@ -40,7 +40,7 @@ async def send_message(bot: AsyncTeleBot, message: Message, text: str):
 
 
 async def handle_message(message: Message, bot: AsyncTeleBot) -> None:
-    message_text = message.text
+    message_text = (message.text or "").strip()
     if message.chat.type in ["group", "supergroup", "gigagroup", "channel"]:
         if await is_mention_me(message):
             bot_name = await get_bot_name()
@@ -62,7 +62,11 @@ async def handle_message(message: Message, bot: AsyncTeleBot) -> None:
         model = endpoint.default_model
 
     img_data = None
-    if message.content_type == "photo":
+    if message.content_type == "text":
+        if not message_text:
+            await bot.reply_to(message=message, text="Please enter a message.")
+            return
+    elif message.content_type == "photo":
         if not endpoint.is_support(model, message.content_type):
             await bot.reply_to(
                 message=message, text="This model does not support this message type."
@@ -85,7 +89,7 @@ async def handle_message(message: Message, bot: AsyncTeleBot) -> None:
     msg_type = MessageType[message.content_type.upper()]
     prompt_message = types.Message(
         role="user",
-        content=message_text if msg_type == MessageType.TEXT else message.caption,
+        content=message_text if msg_type.is_text() else message.caption,
         message_id=message.message_id,
         chat_id=chat_id,
         topic_id=convo_id,
@@ -95,10 +99,8 @@ async def handle_message(message: Message, bot: AsyncTeleBot) -> None:
     prompt_message.media_url = img_data
     messages.append(prompt_message)
 
-    # message_payload = ask.message2payload(endpoint, messages)
     reply_msg = await bot.reply_to(message=message, text="A smart cat is thinking...")
-
-    message.text = message_text if msg_type == MessageType.TEXT else img_data
+    message.text = message_text if msg_type.is_text() else img_data
     # await topic.save_or_update_message_holder(convo_id, message, reply_msg.message_id)
 
     text = ""
@@ -114,6 +116,8 @@ async def handle_message(message: Message, bot: AsyncTeleBot) -> None:
         except Exception as ie:
             print(ie)
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         await bot.edit_message_text(
             chat_id=message.chat.id,
             message_id=reply_msg.message_id,
@@ -246,15 +250,21 @@ async def do_generate_title(convo: types.Topic, messages: list, uid: int, text: 
 
 
 async def handle_document(message: Message, bot: AsyncTeleBot):
-    print("coming soon...")
-    # print(message.content_type)
-    # print(message.text)
-    # print(message.caption)
-    # print(message.document)
-    #
-    # file = await bot.get_file(message.document.file_id)
-    # content = await bot.download_file(file.file_path)
-    # print(content)
+    mime_type = message.document.mime_type
+    if not mime_type.startswith("text/"):
+        await bot.reply_to(
+            message,
+            f"Unsupported file type: {mime_type}. Please use a text file.",
+        )
+        return
+
+    caption = message.caption or ""
+    file = await bot.get_file(message.document.file_id)
+    content = await bot.download_file(file.file_path)
+    content = content.decode("utf-8")
+
+    message.text = f"{content}\n\n{caption}"
+    await handle_message(message, bot)
 
 
 def message_check(func):
@@ -274,6 +284,5 @@ def register(bot: AsyncTeleBot, decorator, provider) -> None:
         handler, regexp=r"^(?!/)", pass_bot=True, content_types=["text"]
     )
     bot.register_message_handler(handler, pass_bot=True, content_types=["photo"])
-    bot.register_message_handler(
-        handle_document, pass_bot=True, content_types=["document"]
-    )
+    doc_handler = message_check(decorator(handle_document))
+    bot.register_message_handler(doc_handler, pass_bot=True, content_types=["document"])

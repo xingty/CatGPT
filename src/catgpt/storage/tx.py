@@ -5,6 +5,8 @@ from contextvars import ContextVar
 
 from .. import storage
 
+DEBUG = os.getenv("debug")
+
 
 class TxState(enum.Enum):
     Init = 0
@@ -28,7 +30,7 @@ class Transactional:
 class Transaction:
     def __init__(self, connection, tx_type="read"):
         self.connection = connection
-        if os.getenv("debug"):
+        if DEBUG:
             connection.set_trace_callback(print)
         self.tx_type = tx_type
         self.state = TxState.Init
