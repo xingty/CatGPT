@@ -152,6 +152,10 @@ async def do_share(
     uid: int,
     message: Message,
 ):
+    if operation == "dismiss":
+        await bot.delete_message(chat_id, message.message_id)
+        return
+
     segments = operation.split("_")
     provider = share.share_providers.get(segments[0])
     if not provider:
@@ -159,6 +163,7 @@ async def do_share(
             chat_id=chat_id,
             parse_mode="MarkdownV2",
             text=escape(f"Unknown share provider: {segments[0]}"),
+            message_thread_id=message.message_thread_id,
         )
         await bot.delete_message(chat_id, message.message_id)
         return
@@ -170,6 +175,7 @@ async def do_share(
         chat_id=chat_id,
         parse_mode="MarkdownV2",
         text=escape(f"share link: {html_url}"),
+        message_thread_id=message.message_thread_id,
     )
 
     await bot.delete_messages(chat_id, msg_ids + [message.message_id])

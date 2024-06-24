@@ -265,8 +265,10 @@ async def handle_share(
             )
         )
 
-    if len(items) > 0:
-        buttons.append(items)
+    items.append(
+        InlineKeyboardButton("dismiss", callback_data=f"do_share:dismiss:{context}")
+    )
+    buttons.append(items)
 
     await bot.send_message(
         chat_id=chat_id,

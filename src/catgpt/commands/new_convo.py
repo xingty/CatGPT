@@ -32,12 +32,12 @@ async def handle_new_topic(message: Message, bot: AsyncTeleBot) -> None:
 
 @tx.transactional(tx_type="write")
 async def create_topic_and_update_profile(
-        chat_id: int,
-        uid: int,
-        chat_type: str,
-        thread_id: int = 0,
-        title: str = None,
-        messages: list = None,
+    chat_id: int,
+    uid: int,
+    chat_type: str,
+    thread_id: int = 0,
+    title: str = None,
+    messages: list = None,
 ):
     convo = await topic.new_topic(
         title=title,
@@ -52,13 +52,13 @@ async def create_topic_and_update_profile(
 
 
 async def create_convo(
-        bot: AsyncTeleBot,
-        msg_id: int,
-        chat_id: int,
-        uid: int,
-        chat_type: str,
-        title: str = None,
-        thread_id: int = None,
+    bot: AsyncTeleBot,
+    msg_id: int,
+    chat_id: int,
+    uid: int,
+    chat_type: str,
+    title: str = None,
+    thread_id: int = None,
 ) -> None:
     profile = await profiles.load(uid, chat_id, thread_id)
     prompt = get_prompt(profiles.get_prompt(profile.prompt))

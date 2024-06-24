@@ -37,6 +37,7 @@ async def handle_models(message: Message, bot: AsyncTeleBot):
                 msg_ids=[message.message_id],
                 chat_id=message.chat.id,
                 uid=uid,
+                thread_id=message.message_thread_id,
             )
             return
         elif SHORT_NAME.get(text, None) in models:
@@ -47,6 +48,7 @@ async def handle_models(message: Message, bot: AsyncTeleBot):
                 msg_ids=[message.message_id],
                 chat_id=message.chat.id,
                 uid=uid,
+                thread_id=message.message_thread_id,
             )
             return
 
