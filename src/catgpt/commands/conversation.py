@@ -116,9 +116,7 @@ async def show_conversation(
             InlineKeyboardButton(
                 "download", callback_data=f"download:{convo.tid}:{context}"
             ),
-            InlineKeyboardButton(
-                "dismiss", callback_data=f"topic:dismiss:{context}"
-            ),
+            InlineKeyboardButton("dismiss", callback_data=f"topic:dismiss:{context}"),
         ]
     ]
     for content in segments:
