@@ -76,13 +76,13 @@ async def do_endpoint_change(
         )
         return
 
-    models = endpoint.models
     profile = await profiles.load(uid, chat_id, message.message_thread_id)
-    profile.endpoint = operation
-    if profile.model not in models:
-        profile.model = endpoint.default_model
+    if profile.endpoint != operation:
+        profile.endpoint = operation
+        if profile.model not in endpoint.models:
+            profile.model = endpoint.default_model
 
-    await profiles.update(uid, chat_id, message.message_thread_id, profile)
+        await profiles.update(uid, chat_id, message.message_thread_id, profile)
 
     await bot.send_message(
         chat_id=chat_id,
