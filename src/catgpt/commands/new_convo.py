@@ -7,11 +7,17 @@ from ..utils.prompt import get_prompt
 from . import get_profile_text
 from ..storage import tx
 
+from datetime import datetime
+
 
 async def handle_new_topic(message: Message, bot: AsyncTeleBot) -> None:
     bot_name = await get_bot_name()
     text = message.text.replace("/new", "").replace(bot_name, "").strip()
     uid = message.from_user.id
+
+    if not text:
+        now = datetime.now().strftime("%d%H%M")
+        text = f"New Topic{now}"
 
     await create_convo(
         bot=bot,
@@ -26,12 +32,12 @@ async def handle_new_topic(message: Message, bot: AsyncTeleBot) -> None:
 
 @tx.transactional(tx_type="write")
 async def create_topic_and_update_profile(
-    chat_id: int,
-    uid: int,
-    chat_type: str,
-    thread_id: int = 0,
-    title: str = None,
-    messages: list = None,
+        chat_id: int,
+        uid: int,
+        chat_type: str,
+        thread_id: int = 0,
+        title: str = None,
+        messages: list = None,
 ):
     convo = await topic.new_topic(
         title=title,
@@ -46,13 +52,13 @@ async def create_topic_and_update_profile(
 
 
 async def create_convo(
-    bot: AsyncTeleBot,
-    msg_id: int,
-    chat_id: int,
-    uid: int,
-    chat_type: str,
-    title: str = None,
-    thread_id: int = None,
+        bot: AsyncTeleBot,
+        msg_id: int,
+        chat_id: int,
+        uid: int,
+        chat_type: str,
+        title: str = None,
+        thread_id: int = None,
 ) -> None:
     profile = await profiles.load(uid, chat_id, thread_id)
     prompt = get_prompt(profiles.get_prompt(profile.prompt))
