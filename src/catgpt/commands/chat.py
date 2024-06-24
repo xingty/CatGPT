@@ -14,6 +14,7 @@ from ..utils import tg_image
 import time
 import asyncio
 import base64
+import logging
 
 
 async def is_mention_me(message: Message) -> bool:
@@ -83,6 +84,7 @@ async def handle_message(message: Message, bot: AsyncTeleBot) -> None:
             chat_id=chat_id,
             profile=profile,
             chat_type=message.chat.type,
+            thread_id=message.message_thread_id,
         )
 
     messages = [] + convo.messages
@@ -110,20 +112,17 @@ async def handle_message(message: Message, bot: AsyncTeleBot) -> None:
         await topic.append_messages(convo_id, message, reply_msg)
 
         try:
-            generate_title = convo.generate_title
-            if generate_title:
+            if convo.generate_title:
                 await do_generate_title(convo, messages, uid, text)
         except Exception as ie:
             print(ie)
     except Exception as e:
-        import traceback
-        traceback.print_exc()
         await bot.edit_message_text(
             chat_id=message.chat.id,
             message_id=reply_msg.message_id,
             text=f"{text}\n Error: {e}",
         )
-        return
+        logging.exception(e)
 
 
 async def do_reply(
