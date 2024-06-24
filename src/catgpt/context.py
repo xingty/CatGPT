@@ -48,6 +48,7 @@ async def init_configuration(options):
     bot = AsyncTeleBot(
         token=c["tg_token"],
         disable_web_page_preview=True,
+        disable_notification=True,
     )
 
     share.init_providers(c.get("share", []), config)
