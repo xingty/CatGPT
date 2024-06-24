@@ -20,22 +20,27 @@ async def show_conversation_list(
     profile = await profiles.load(uid, chat_id, thread_id)
     convo_id = profile.topic_id
 
-    current_convo = await topic.get_topic(convo_id)
     context = f"{msg_id}:{chat_id}:{uid}"
     keyboard = []
     items = []
 
-    title = current_convo.title if current_convo else "None"
-    text = f"Current topic: `{title}` \n\nlist of topics:\n"
+    # hint = "current topic: **[{index}]** \n\n{content}"
     conversations = await topic.list_topics(int(uid), chat_id, thread_id)
+    text = ""
+    # current_index = 0
     for index, convo in enumerate(conversations):
         callback_data = f"list_tips:{convo.tid}:{context}"
         if len(items) == 5:
             keyboard.append(items)
             items = []
         items.append(InlineKeyboardButton(index + 1, callback_data=callback_data))
-        text += f"{index+1}. {convo.title}\n"
+        if convo.tid == convo_id:
+            current_index = index
+            text += f"**[{index + 1}] {convo.title}**\n"
+        else:
+            text += f"[{index+1}] {convo.title}\n"
 
+    # text = hint.format(index=current_index + 1, content=text)
     if len(items) > 0:
         keyboard.append(items)
         keyboard.append(
@@ -46,20 +51,26 @@ async def show_conversation_list(
             ]
         )
 
+    print(text)
+    if not text:
+        text = "No conversations found."
+
     # update list
     if edit_msg_id <= 0:
         await bot.send_message(
             chat_id=chat_id,
-            text=text,
+            text=escape(text),
             reply_markup=InlineKeyboardMarkup(keyboard),
             message_thread_id=thread_id,
+            parse_mode="MarkdownV2",
         )
     else:
         await bot.edit_message_text(
             chat_id=chat_id,
             message_id=edit_msg_id,
-            text=text,
+            text=escape(text),
             reply_markup=InlineKeyboardMarkup(keyboard),
+            parse_mode="MarkdownV2",
         )
 
 
@@ -93,6 +104,7 @@ async def do_convo_change(
             chat_id=chat_id,
             parse_mode="MarkdownV2",
             text=escape(f"topic `{conversation_id}` not found"),
+            message_thread_id=message.message_thread_id,
         )
         return
 
@@ -114,6 +126,7 @@ async def do_convo_change(
                 chat_id=chat_id,
                 parse_mode="MarkdownV2",
                 text=escape(f"topic `{conversation_id}` is empty"),
+                message_thread_id=message.message_thread_id,
             )
             await bot.delete_message(chat_id, message.message_id)
         else:
@@ -212,6 +225,7 @@ async def do_handle_tips(
         parse_mode="MarkdownV2",
         text=preview_message,
         reply_markup=InlineKeyboardMarkup(buttons),
+        message_thread_id=message.message_thread_id,
     )
 
 
