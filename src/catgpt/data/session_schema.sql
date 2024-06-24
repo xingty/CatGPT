@@ -65,6 +65,6 @@ create table users
 
 create table version
 (
-    version_name    TEXT
+    version_name    TEXT,
     version_code    INTEGER
 )

@@ -6,20 +6,42 @@ from pathlib import Path
 
 from ..storage import Datasource, tx, Topic
 from ..storage import types
-from ..types import MessageType
 
-VERSION = [
-    {
-        "version": "0.1.1",
-        "version_code": 2401010501,
-        "sql_list": [""],
-    }
-]
+CURRENT_VERSION = "0.1.0"
+VERSION_CODE = 2406252000
+
+VERSION = [{"version_name": "0.1.0", "version_code": 2406252010, "sql_list": []}]
 
 
 def migrate(connection):
-    # execute sql to migrate to the specified version
-    pass
+    try:
+        query = "select * from version order by version_code desc limit 1"
+        connection.set_trace_callback(print)
+        vi = connection.execute(query).fetchone()
+
+        latest_version = None
+        for version in VERSION:
+            if vi[1] >= version["version_code"]:
+                continue
+
+            sqlite_list = version.get("sql_list", [])
+            for sql in sqlite_list:
+                connection.execute(sql)
+
+            latest_version = version
+
+        if latest_version:
+            sql = "insert into version (version_name, version_code) values (?,?)"
+            connection.execute(
+                sql, (latest_version["version_name"], latest_version["version_code"])
+            )
+
+        connection.commit()
+    except Exception as e:
+        connection.rollback()
+        raise e
+    finally:
+        connection.close()
 
 
 class ConnectionProxy:
@@ -55,7 +77,13 @@ class Sqlite3Datasource(Datasource):
             schema_commands = schema_file.read_text(encoding="utf-8")
             conn.executescript(schema_commands)
             conn.execute("pragma journal_mode=wal;")
+            sql = "insert into version (version_name, version_code) values (?,?)"
+            conn.execute(sql, (CURRENT_VERSION, VERSION_CODE))
+
+            conn.commit()
             conn.close()
+
+        migrate(sqlite3.connect(self.db_file))
 
         self.pool.put_nowait(sqlite3.connect(self.db_file))
 
