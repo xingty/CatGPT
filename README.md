@@ -1,6 +1,6 @@
 # CatGPT 
 
-CatGPt is a Telegram bot that integrates with OpenAI's api for people who like to use OpenAI in Telegram.
+CatGPT is a Telegram bot that integrates with OpenAI's api for people who like to use OpenAI in Telegram.
 
 ### Features
 * Multiple topics
@@ -43,6 +43,7 @@ CatGPt is a Telegram bot that integrates with OpenAI's api for people who like t
   pip3 install mqgpt-${version}-py3-none-any-whl
   mqgpt --config ${config_file}
   ```
+
 
 
  ### Commands
@@ -110,7 +111,7 @@ CatGPt is a Telegram bot that integrates with OpenAI's api for people who like t
 
   Display all the support models of the endpoint.
 
-  Use `/models [model name]` to switch to it directly. Otherwise, the list of models will be displayed in the  chat window.
+  Use `/model [model name]` to switch to it directly. Otherwise, the list of models will be displayed in the  chat window.
 
   There are some short names that map to the full names of those models
 
@@ -128,7 +129,7 @@ CatGPt is a Telegram bot that integrates with OpenAI's api for people who like t
     	"4o": "gpt-4o"
   }
 	```
-	For example, you can use `/models 0409` to switch to the model `gpt-4-turbo-2024-04-09` directly.
+	For example, you can use `/model 0409` to switch to the model `gpt-4-turbo-2024-04-09` directly.
 	
 	![](assets/model.png)
 	
@@ -146,6 +147,17 @@ CatGPt is a Telegram bot that integrates with OpenAI's api for people who like t
   * `all`: Clears both chat history and messages.
 
 
+
+### CLI
+
+```shell
+usage: mqgpt [-h] --config CONFIG [--preset PRESET]
+
+options:
+  -h, --help       show this help message and exit
+  --config CONFIG  Config file
+  --preset PRESET  preset file
+```
 
 ### Configuration
 
@@ -165,7 +177,7 @@ CatGPt is a Telegram bot that integrates with OpenAI's api for people who like t
   * `provider`:  **openai** or **gemini**
   * `api_url`: api url. e.g. `https://api.openai.com/v1`
   * `secret_key`: secret_key
-  * `models`: list of supporting models for this endpoint
+  * `models`: list of supporting models of this endpoint
   * `generate_title`: If `true`, the endpoint will be used to automatically generate titles for topics that lack one, based on their chat history."
 
 * `share`: a share provider(only supports github currently)
@@ -208,6 +220,25 @@ CatGPt is a Telegram bot that integrates with OpenAI's api for people who like t
     }
   ]
 }
+```
+
+
+
+### Preset
+
+You can specific your own preset file.
+
+```json
+[
+  {
+    "role": "ai",
+    "prompt": "you are a helpful assistant."
+  },
+  {
+    "role": "translator",
+    "prompt": "you are a translator."
+  }
+]
 ```
 
 
