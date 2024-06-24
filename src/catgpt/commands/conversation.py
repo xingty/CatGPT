@@ -112,9 +112,12 @@ async def show_conversation(
     context = f"{msg_id}:{chat_id}:{uid}"
     keyboard = [
         [
-            InlineKeyboardButton("Share", callback_data=f"share:{convo.tid}:{context}"),
+            InlineKeyboardButton("share", callback_data=f"share:{convo.tid}:{context}"),
             InlineKeyboardButton(
-                "Download", callback_data=f"download:{convo.tid}:{context}"
+                "download", callback_data=f"download:{convo.tid}:{context}"
+            ),
+            InlineKeyboardButton(
+                "dismiss", callback_data=f"topic:dismiss:{context}"
             ),
         ]
     ]
@@ -181,6 +184,17 @@ async def do_share(
     await bot.delete_messages(chat_id, msg_ids + [message.message_id])
 
 
+async def handle_dismiss(
+    bot: AsyncTeleBot,
+    operation: str,
+    msg_ids: list[int],
+    chat_id: int,
+    uid: str,
+    message: Message,
+):
+    await bot.delete_messages(chat_id, msg_ids + [message.message_id])
+
+
 def register(bot: AsyncTeleBot, decorator, action_provider):
     handler = decorator(handle_conversation)
     bot.register_message_handler(handler, pass_bot=True, commands=[action["name"]])
@@ -188,6 +202,7 @@ def register(bot: AsyncTeleBot, decorator, action_provider):
     action_provider["share"] = handle_share
     action_provider["download"] = handle_download
     action_provider["do_share"] = do_share
+    action_provider["topic"] = handle_dismiss
 
     return action
 
