@@ -88,7 +88,7 @@ CatGPT is a Telegram bot that integrates with OpenAI's api for people who like t
 	  
   * **other characters**
 
-    Any other characters will be treated as the title, and the topic's title will be updated."
+    Any other characters will be treated as a title, and the topic's title will be updated."
 	
 
 ​		![operations](assets/dl_share.png)
@@ -105,7 +105,7 @@ CatGPT is a Telegram bot that integrates with OpenAI's api for people who like t
 
   Display all endpoints.
 
-​	You can also swtich to an endpoint directly with the command `/endpoints [your endpoint name]`
+​	You can also swtich to an endpoint directly with the command `/endpoint [your endpoint name]`
 
 * **/model** `[model name]`
 
