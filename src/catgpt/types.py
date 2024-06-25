@@ -71,7 +71,7 @@ class Configuration:
         self.proxy_url: str = ""
         self.share_info = None
         self.endpoints: [Endpoint] = []
-        self.response_group_message = False
+        self.respond_group_message = False
 
     def get_endpoints(self) -> [Endpoint]:
         return self.endpoints

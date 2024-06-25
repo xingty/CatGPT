@@ -146,17 +146,24 @@ CatGPT is a Telegram bot that integrates with OpenAI's api for people who like t
   * `history`: Only clear the chat history, messages are remained in the chat window.
   * `all`: Clears both chat history and messages.
 
+* **/respond** `[y|yes|n|no]`
+
+  if enable, the bot will respond to all the group messages.
+
+  This command is **only granted** to the group owner or adminstrators.
+
 
 
 ### CLI
 
 ```shell
-usage: mqgpt [-h] --config CONFIG [--preset PRESET]
+usage: mqgpt [-h] --config CONFIG [--preset PRESET] [--db-file DB_FILE]
 
 options:
   -h, --help       show this help message and exit
   --config CONFIG  Config file
   --preset PRESET  preset file
+  --db-file DB_FILE  database file
 ```
 
 ### Configuration
@@ -167,7 +174,7 @@ options:
 
 * `proxy`: a http or https proxy server. the chatbot will run behind the proxy server if it's supplied
 
-* `respond_group_message`: If true, the bot will respond to group messages even without being mentioned.  default: `false`
+* `respond_group_message`: If true, the bot will respond to group messages even if it is not mentioned.  default: `false`, can be changed at runtime using the command `/respond` in groups.
 
 * `endpoinds`: your endpoints
 

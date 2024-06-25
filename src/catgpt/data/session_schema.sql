@@ -62,6 +62,13 @@ create table users
     unique (uid)
 );
 
+create table group_info
+(
+    chat_id    INTEGER not null ,
+    respond_message INTEGER default 0 not null
+);
+
+create index gi_u_cid on group_info (chat_id);
 
 create table version
 (

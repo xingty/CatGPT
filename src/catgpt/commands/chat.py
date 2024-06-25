@@ -2,7 +2,7 @@ from telebot.async_telebot import AsyncTeleBot
 from telebot.asyncio_helper import ApiTelegramException
 from telebot.types import Message
 
-from ..context import profiles, config, get_bot_name, topic
+from ..context import profiles, config, get_bot_name, topic, group_config
 from ..types import Endpoint, MessageType
 from ..utils.text import get_timeout_from_text, MAX_TEXT_LENGTH
 from . import create_convo_and_update_profile
@@ -269,7 +269,10 @@ async def handle_document(message: Message, bot: AsyncTeleBot):
 def message_check(func):
     async def wrapper(message: Message, bot: AsyncTeleBot):
         if message.chat.type in ["group", "supergroup", "gigagroup", "channel"]:
-            if not config.response_group_message and not await is_mention_me(message):
+            respond_message = await group_config.is_respond_group_message(
+                message.chat.id
+            )
+            if not respond_message and not await is_mention_me(message):
                 return
 
         await func(message, bot)

@@ -1,5 +1,6 @@
 import enum
 import os
+import time
 
 from contextvars import ContextVar
 
@@ -59,6 +60,7 @@ def transactional(tx_type: str = "read"):
         async def wrapper(*args, **kwargs):
             token = None
             tx = context.get()
+            start = time.time()
             if tx is None:
                 if tx_type == "write":
                     conn = await storage.datasource.get_write_conn()
@@ -85,6 +87,8 @@ def transactional(tx_type: str = "read"):
                 print(e)
                 raise e
             finally:
+                end = time.time()
+                print(f"Transaction time: {end} - {start} = {end - start}")
                 if token is not None:
                     context.reset(token)
                     tx.close()

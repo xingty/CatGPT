@@ -3,6 +3,7 @@ from telebot.async_telebot import AsyncTeleBot, asyncio_helper
 from pathlib import Path
 
 from .user_profile import UserProfile, Users
+from .group import GroupConfig
 from .types import Endpoint, Configuration
 from . import share
 from .topic import Topic
@@ -13,6 +14,7 @@ import json
 
 config = Configuration()
 
+group_config: GroupConfig | None = None
 profiles: UserProfile | None = None
 users: Users | None = None
 topic: Topic | None = None
@@ -33,7 +35,7 @@ async def init_configuration(options):
     config.access_key = c["access_key"]
     config.proxy_url = c.get("proxy", None)
     config.share_info = c.get("share", None)
-    config.response_group_message = c.get("respond_group_message", False)
+    config.respond_group_message = c.get("respond_group_message", False)
 
     endpoints = c.get("endpoints", [])
     assert len(endpoints) > 0, "endpoints is required"
@@ -58,16 +60,19 @@ async def init_datasource(options):
     global topic
     global profiles
     global users
+    global group_config
     from .storage.sqlite3_session_storage import (
         Sqlite3Datasource,
         Sqlite3TopicStorage,
         Sqlite3ProfileStorage,
         Sqlite3UserStorage,
+        Sqlite3GroupInfoStorage,
     )
 
+    db_file = options.db_file or "data.db"
     schema_file = Path(__file__).parent.joinpath("data").joinpath("session_schema.sql")
 
-    datasource = Sqlite3Datasource("data.db", schema_file)
+    datasource = Sqlite3Datasource(db_file, schema_file)
     storage.datasource = datasource
     topic_storage = Sqlite3TopicStorage()
     topic = Topic(topic_storage)
@@ -78,6 +83,9 @@ async def init_datasource(options):
     profiles = UserProfile(profile_storage, f_preset)
     user_storage = Sqlite3UserStorage()
     users = Users(user_storage)
+
+    group_storage = Sqlite3GroupInfoStorage()
+    group_config = GroupConfig(group_storage, config.respond_group_message)
 
 
 async def init(options):

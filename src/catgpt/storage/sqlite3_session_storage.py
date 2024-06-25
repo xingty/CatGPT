@@ -16,7 +16,6 @@ VERSION = [{"version_name": "0.1.0", "version_code": 2406252010, "sql_list": []}
 def migrate(connection):
     try:
         query = "select * from version order by version_code desc limit 1"
-        connection.set_trace_callback(print)
         vi = connection.execute(query).fetchone()
 
         latest_version = None
@@ -386,3 +385,31 @@ class Sqlite3ProfileStorage(types.ProfileStorage, tx.Transactional):
                 profile.thread_id or 0,
             ),
         )
+
+
+class Sqlite3GroupInfoStorage(types.GroupInfoStorage, tx.Transactional):
+
+    @tx.transactional(tx_type="read")
+    async def get_group_info(self, chat_id: int) -> [types.GroupInfo | None]:
+        t = await self.retrieve_transaction()
+        sql = "select * from group_info where chat_id = ?"
+        row = t.connection.execute(sql, (chat_id,)).fetchone()
+        if not row:
+            return None
+
+        return types.GroupInfo(*row)
+
+    @tx.transactional(tx_type="write")
+    async def create_group_info(self, group_info: types.GroupInfo) -> int:
+        t = await self.retrieve_transaction()
+        sql = "insert into group_info (chat_id, respond_message) values (?,?)"
+        columns = (group_info.chat_id, group_info.respond_message)
+        cursor = t.connection.execute(sql, columns)
+
+        return cursor.lastrowid
+
+    @tx.transactional(tx_type="write")
+    async def update_group_info(self, chat_id: int, respond_message: int):
+        t = await self.retrieve_transaction()
+        sql = f"update group_info set respond_message = ? where chat_id = ?"
+        t.connection.execute(sql, (respond_message, chat_id))

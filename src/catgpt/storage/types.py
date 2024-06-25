@@ -105,6 +105,12 @@ class User:
         self.blocked = blocked
 
 
+class GroupInfo:
+    def __init__(self, chat_id: int, respond_message: int):
+        self.chat_id = chat_id
+        self.respond_message = respond_message
+
+
 class TopicStorage(ABC):
     @abstractmethod
     async def append_message(self, topic_id: int, message: [Message]):
@@ -177,4 +183,16 @@ class UserStorage:
 
     @abstractmethod
     async def create_user(self, user: User) -> int:
+        pass
+
+
+class GroupInfoStorage:
+    @abstractmethod
+    async def get_group_info(self, chat_id: int) -> [GroupInfo | None]:
+        pass
+
+    async def create_group_info(self, group_info: GroupInfo) -> int:
+        pass
+
+    async def update_group_info(self, chat_id: int, respond_message: int):
         pass

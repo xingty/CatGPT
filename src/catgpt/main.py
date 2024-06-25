@@ -22,6 +22,13 @@ async def main():
         help="preset file",
     )
 
+    parser.add_argument(
+        "--db-file",
+        type=str,
+        required=False,
+        help="database file",
+    )
+
     options = parser.parse_args()
     await context.init(options)
     bot: AsyncTeleBot = context.bot
