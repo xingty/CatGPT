@@ -14,13 +14,12 @@ class GroupConfig:
 
         info = await self.storage.get_group_info(chat_id)
         if not info:
-            await self.storage.create_group_info(
-                GroupInfo(chat_id, self.respond_messages)
-            )
+            info = GroupInfo(chat_id, self.respond_messages)
+            await self.storage.create_group_info(info)
 
-        self.memory[key] = self.respond_messages
+        self.memory[key] = info.respond_message
 
-        return self.respond_messages
+        return info.respond_message
 
     async def update_respond_messages(self, chat_id: int, respond_messages: int):
         await self.storage.update_group_info(chat_id, respond_messages)
