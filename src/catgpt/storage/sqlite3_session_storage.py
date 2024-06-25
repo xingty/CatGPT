@@ -17,6 +17,8 @@ def migrate(connection):
     try:
         query = "select * from version order by version_code desc limit 1"
         vi = connection.execute(query).fetchone()
+        if not vi:
+            vi = ("0.0.1", 0)
 
         latest_version = None
         for version in VERSION:
