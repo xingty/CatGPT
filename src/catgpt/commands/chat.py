@@ -185,31 +185,31 @@ async def do_reply(
                 else:
                     raise ae
 
-    if len(buffered) > 0:
-        delta = timeout - (time.time() - start)
-        if delta > 0:
-            await asyncio.sleep(int(delta) + 1)
+    # if len(buffered) > 0: for removing the endpoint info from the message
+    delta = timeout - (time.time() - start)
+    if delta > 0:
+        await asyncio.sleep(int(delta) + 1)
 
-        text += buffered
+    text += buffered
+    msg_text = escape(text)
+    if text_overflow or len(msg_text) > MAX_TEXT_LENGTH:
+        text_overflow = True
         msg_text = escape(text)
-        if text_overflow or len(msg_text) > MAX_TEXT_LENGTH:
-            text_overflow = True
-            msg_text = escape(text)
 
-        msg = await bot.edit_message_text(
-            text=msg_text,
+    msg = await bot.edit_message_text(
+        text=msg_text,
+        chat_id=reply_msg.chat.id,
+        message_id=reply_msg.message_id,
+        parse_mode="MarkdownV2",
+        disable_web_page_preview=True,
+    )
+
+    if text_overflow:
+        await bot.send_message(
             chat_id=reply_msg.chat.id,
-            message_id=reply_msg.message_id,
-            parse_mode="MarkdownV2",
-            disable_web_page_preview=True,
+            text=escape(buffered),
+            reply_to_message_id=msg.message_id,
         )
-
-        if text_overflow:
-            await bot.send_message(
-                chat_id=reply_msg.chat.id,
-                text=escape(buffered),
-                reply_to_message_id=msg.message_id,
-            )
 
     return text
 
