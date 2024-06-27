@@ -51,7 +51,6 @@ async def show_conversation_list(
             ]
         )
 
-    print(text)
     if not text:
         text = "No conversations found."
 

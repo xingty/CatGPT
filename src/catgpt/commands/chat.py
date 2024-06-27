@@ -2,8 +2,8 @@ from telebot.async_telebot import AsyncTeleBot
 from telebot.asyncio_helper import ApiTelegramException
 from telebot.types import Message
 
-from ..context import profiles, config, get_bot_name, topic, group_config
-from ..types import Endpoint, MessageType
+from ..context import profiles, config, get_bot_name, topic, group_config, page_preview
+from ..types import Endpoint, MessageType, Preview
 from ..utils.text import get_timeout_from_text, MAX_TEXT_LENGTH
 from . import create_convo_and_update_profile
 from ..provider import ask, ask_stream
@@ -107,7 +107,7 @@ async def handle_message(message: Message, bot: AsyncTeleBot) -> None:
 
     text = ""
     try:
-        text = await do_reply(endpoint, model, messages, reply_msg, bot)
+        text = await do_reply(endpoint, model, messages, reply_msg, bot, convo)
         reply_msg.text = text
         await topic.append_messages(convo_id, message, reply_msg)
 
@@ -131,6 +131,7 @@ async def do_reply(
     messages: list,
     reply_msg: Message,
     bot: AsyncTeleBot,
+    convo: types.Topic,
 ):
     text = ""
     buffered = ""
@@ -185,14 +186,24 @@ async def do_reply(
                 else:
                     raise ae
 
-    # if len(buffered) > 0: for removing the endpoint info from the message
     delta = timeout - (time.time() - start)
     if delta > 0:
         await asyncio.sleep(int(delta) + 1)
 
-    text += buffered
-    msg_text = escape(text)
+    msg_text = escape(text + buffered)
     if text_overflow or len(msg_text) > MAX_TEXT_LENGTH:
+        if config.topic_preview == Preview.TELEGRAPH:
+            msg_text = text + buffered
+            title = f"{convo.title}_{reply_msg.message_id}"
+            url = await page_preview.preview_chat(convo.label, title, msg_text)
+            await bot.edit_message_text(
+                chat_id=reply_msg.chat.id,
+                message_id=reply_msg.message_id,
+                text=url,
+                disable_web_page_preview=False,
+            )
+            return msg_text
+
         text_overflow = True
         msg_text = escape(text)
 
@@ -211,7 +222,7 @@ async def do_reply(
             reply_to_message_id=msg.message_id,
         )
 
-    return text
+    return text + buffered
 
 
 async def do_generate_title(convo: types.Topic, messages: list, uid: int, text: str):

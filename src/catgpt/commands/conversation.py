@@ -3,9 +3,15 @@ from telebot.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
 
 from ..utils.md2tgmd import escape
 from ..utils.text import messages_to_segments
-from ..context import profiles, topic, get_bot_name
+from ..context import profiles, topic, get_bot_name, config, page_preview
 from . import share, send_file, handle_share
 from ..storage import types
+from ..types import Preview
+
+preview_mapping = {
+    "iv": Preview.TELEGRAPH,
+    "inner": Preview.INTERNAL,
+}
 
 
 async def handle_conversation(message: Message, bot: AsyncTeleBot):
@@ -19,16 +25,21 @@ async def handle_conversation(message: Message, bot: AsyncTeleBot):
         return
 
     bot_name = await get_bot_name()
-    instruction = message.text.replace("/topic", "").replace(bot_name, "").strip()
-    if len(instruction) == 0:
+    instruction = (
+        message.text.replace("/topic", "").replace(bot_name, "").strip().lower()
+    )
+    if len(instruction) == 0 or instruction in ["inner", "iv"]:
+        preview_type = preview_mapping.get(instruction, config.topic_preview)
         await show_conversation(
             chat_id=message.chat.id,
             msg_id=message.message_id,
             uid=uid,
             bot=bot,
             convo=convo,
+            profile=profile,
             reply_msg_id=message.message_id,
             thread_id=message.message_thread_id,
+            preview_type=preview_type,
         )
         return
 
@@ -91,8 +102,10 @@ async def show_conversation(
     uid: int,
     bot: AsyncTeleBot,
     convo: types.Topic,
+    profile: types.Profile,
     reply_msg_id: int = None,
     thread_id: int = None,
+    preview_type: Preview = None,
 ):
     messages: list[types.Message] = convo.messages or []
     messages = [
@@ -119,17 +132,31 @@ async def show_conversation(
             InlineKeyboardButton("dismiss", callback_data=f"topic:dismiss:{context}"),
         ]
     ]
-    for content in segments:
-        reply_msg: Message = await bot.send_message(
+
+    if preview_type == Preview.TELEGRAPH:
+        md_content = "\n\n".join(segments)
+        html_url = await page_preview.preview_md_text(profile, convo.title, md_content)
+        await bot.send_message(
             chat_id=chat_id,
-            text=escape(content),
-            parse_mode="MarkdownV2",
-            disable_web_page_preview=True,
+            text=f"[{convo.title}]({html_url})",
             reply_to_message_id=last_message_id,
+            disable_web_page_preview=False,
             reply_markup=InlineKeyboardMarkup(keyboard),
             message_thread_id=thread_id,
+            parse_mode="MarkdownV2",
         )
-        last_message_id = reply_msg.message_id
+    else:
+        for content in segments:
+            reply_msg: Message = await bot.send_message(
+                chat_id=chat_id,
+                text=escape(content),
+                parse_mode="MarkdownV2",
+                disable_web_page_preview=True,
+                reply_to_message_id=last_message_id,
+                reply_markup=InlineKeyboardMarkup(keyboard),
+                message_thread_id=thread_id,
+            )
+            last_message_id = reply_msg.message_id
 
 
 async def handle_download(
@@ -174,9 +201,9 @@ async def do_share(
 
     await bot.send_message(
         chat_id=chat_id,
-        parse_mode="MarkdownV2",
-        text=escape(f"share link: {html_url}"),
+        text=html_url,
         message_thread_id=message.message_thread_id,
+        disable_web_page_preview=False,
     )
 
     await bot.delete_messages(chat_id, msg_ids + [message.message_id])
@@ -207,7 +234,6 @@ def register(bot: AsyncTeleBot, decorator, action_provider):
 
 action = {
     "name": "topic",
-    "description": "current topic: [share|download|title]",
-    "delete_after_invoke": False,
+    "description": "current topic: [share|download|inner|title]",
     "order": 30,
 }

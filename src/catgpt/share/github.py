@@ -50,7 +50,7 @@ class GithubProvider:
                 url, headers=headers, json=data, proxy=self.proxy
             ) as response:
                 if not response.ok:
-                    raise Exception(f"Failed to create issue: {response.text}")
+                    raise Exception(f"Failed to create issue: {await response.text()}")
 
                 return await response.json()
 
@@ -86,8 +86,18 @@ class GithubProvider:
             label=convo.label,
         )
 
+    async def share_text(self, article_id, title, content):
+        return await self.create_or_update_issue(
+            title=title,
+            body=content,
+            label=article_id,
+        )
 
-def create(params: dict):
+    def get_token(self):
+        return self.token
+
+
+async def create(params: dict, config):
     return GithubProvider(
         name=params.get("name"),
         owner=params.get("owner"),

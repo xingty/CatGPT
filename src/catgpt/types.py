@@ -64,6 +64,11 @@ class Endpoint:
         )"""
 
 
+class Preview(enum.Enum):
+    INTERNAL = "internal"
+    TELEGRAPH = "telegraph"
+
+
 class Configuration:
 
     def __init__(self):
@@ -72,6 +77,7 @@ class Configuration:
         self.share_info = None
         self.endpoints: [Endpoint] = []
         self.respond_group_message = False
+        self.topic_preview = Preview.INTERNAL
 
     def get_endpoints(self) -> [Endpoint]:
         return self.endpoints
@@ -144,3 +150,4 @@ class ChatType(enum.Enum):
 
 class ShareType(enum.Enum):
     GITHUB = "github"
+    TELEGRAPH = "telegraph"

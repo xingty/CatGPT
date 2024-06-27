@@ -10,7 +10,17 @@ from ..storage import types
 CURRENT_VERSION = "0.1.0"
 VERSION_CODE = 2406252000
 
-VERSION = [{"version_name": "0.1.0", "version_code": 2406252010, "sql_list": []}]
+VERSION = [
+    {"version_name": "0.1.0", "version_code": 2406252010, "sql_list": []},
+    {
+        "version_name": "0.1.1",
+        "version_code": 2406292020,
+        "sql_list": [
+            "alter table profile add preview_url TEXT;",
+            "alter table profile add preview_token TEXT;",
+        ],
+    },
+]
 
 
 def migrate(connection):
@@ -21,19 +31,20 @@ def migrate(connection):
             vi = ("0.0.1", 0)
 
         latest_version = None
+        cursor = connection.cursor()
         for version in VERSION:
             if vi[1] >= version["version_code"]:
                 continue
 
             sqlite_list = version.get("sql_list", [])
             for sql in sqlite_list:
-                connection.execute(sql)
+                cursor.execute(sql)
 
             latest_version = version
 
         if latest_version:
             sql = "insert into version (version_name, version_code) values (?,?)"
-            connection.execute(
+            cursor.execute(
                 sql, (latest_version["version_name"], latest_version["version_code"])
             )
 
@@ -328,7 +339,7 @@ class Sqlite3ProfileStorage(types.ProfileStorage, tx.Transactional):
     @tx.transactional(tx_type="write")
     async def create_profile(self, profile: types.Profile) -> int:
         t = await self.retrieve_transaction()
-        sql = "insert into profile (uid, model, endpoint, prompt, chat_type, chat_id, thread_id, topic_id) values "
+        fields = "(uid, model, endpoint, prompt, chat_type, chat_id, thread_id, topic_id, preview_url, preview_token)"
         columns = (
             profile.uid,
             profile.model,
@@ -338,8 +349,11 @@ class Sqlite3ProfileStorage(types.ProfileStorage, tx.Transactional):
             profile.chat_id,
             profile.thread_id or 0,
             profile.topic_id,
+            profile.preview_url or "",
+            profile.preview_token or "",
         )
-        sql += "(" + ",".join("?" * len(columns)) + ")"
+        placeholders = "(" + ",".join("?" * len(columns)) + ")"
+        sql = f"insert into profile {fields} values {placeholders}"
 
         cursor = t.connection.execute(sql, columns)
         return cursor.lastrowid
@@ -374,7 +388,7 @@ class Sqlite3ProfileStorage(types.ProfileStorage, tx.Transactional):
         self, uid: int, chat_id: int, thread_id: int, profile: types.Profile
     ):
         t = await self.retrieve_transaction()
-        sql = f"update profile set model = ?, endpoint = ?, prompt = ?, topic_id = ? where uid = ? and chat_id = ? and thread_id = ?"
+        sql = f"update profile set model = ?, endpoint = ?, prompt = ?, topic_id = ?, preview_url = ?, preview_token = ? where uid = ? and chat_id = ? and thread_id = ?"
         t.connection.execute(
             sql,
             (
@@ -382,6 +396,8 @@ class Sqlite3ProfileStorage(types.ProfileStorage, tx.Transactional):
                 profile.endpoint,
                 profile.prompt,
                 profile.topic_id,
+                profile.preview_url,
+                profile.preview_token,
                 profile.uid,
                 profile.chat_id,
                 profile.thread_id or 0,

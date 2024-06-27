@@ -4,10 +4,11 @@ from pathlib import Path
 
 from .user_profile import UserProfile, Users
 from .group import GroupConfig
-from .types import Endpoint, Configuration
+from .types import Endpoint, Configuration, Preview
 from . import share
 from .topic import Topic
 from . import storage
+from .share.preview import PagePreview
 
 import json
 
@@ -20,6 +21,7 @@ users: Users | None = None
 topic: Topic | None = None
 bot: AsyncTeleBot | None = None
 bot_name = None
+page_preview: PagePreview | None = None
 
 
 async def init_configuration(options):
@@ -36,6 +38,8 @@ async def init_configuration(options):
     config.proxy_url = c.get("proxy", None)
     config.share_info = c.get("share", None)
     config.respond_group_message = c.get("respond_group_message", False)
+    preview_type = c.get("topic_preview_type", Preview.TELEGRAPH.name)
+    config.topic_preview = Preview[preview_type.upper()]
 
     endpoints = c.get("endpoints", [])
     assert len(endpoints) > 0, "endpoints is required"
@@ -53,7 +57,7 @@ async def init_configuration(options):
         disable_notification=True,
     )
 
-    share.init_providers(c.get("share", []), config)
+    await share.init_providers(c.get("share", []), config)
 
 
 async def init_datasource(options):
@@ -61,6 +65,7 @@ async def init_datasource(options):
     global profiles
     global users
     global group_config
+    global page_preview
     from .storage.sqlite3_session_storage import (
         Sqlite3Datasource,
         Sqlite3TopicStorage,
@@ -86,6 +91,8 @@ async def init_datasource(options):
 
     group_storage = Sqlite3GroupInfoStorage()
     group_config = GroupConfig(group_storage, config.respond_group_message)
+
+    page_preview = PagePreview(profiles)
 
 
 async def init(options):

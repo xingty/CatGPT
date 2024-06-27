@@ -74,7 +74,7 @@ CatGPT is a Telegram bot that integrates with OpenAI's api for people who like t
 
    ![new topic](assets/new.png)
 
-* **/topic** `[share | download | title]`
+* **/topic** `[share | download | iv | inner | title]`
 
   There are three optional operations that you can use to perform some task quickly.
 
@@ -86,9 +86,19 @@ CatGPT is a Telegram bot that integrates with OpenAI's api for people who like t
 
     Use `/topic download` to download the topic's content directly without a confirmation operation. The content will be encoded as Markdown file
 	  
-  * **other characters**
+  * `iv`
 
-    Any other characters will be treated as a title, and the topic's title will be updated."
+    Display the chat history of this conversation in the form of Instant View even if the text length does not overflow.
+	  
+	  ![instant view](assets/iv.png)
+	  
+	* `inner`
+	
+	  Display the chat history of this conversation in the form of Telegram Message. 
+	  
+	* **other characters**
+	
+	  Any other characters will be treated as a title, and the topic's title will be updated."
 	
 
 ​		![operations](assets/dl_share.png)
@@ -176,6 +186,8 @@ options:
 
 * `respond_group_message`: If true, the bot will respond to group messages even if it is not mentioned.  default: `false`, can be changed at runtime using the command `/respond` in groups.
 
+* `topic_preview_type`: **TELEGRAPH** or **INTERNAL**
+
 * `endpoinds`: your endpoints
 
   endpint:
@@ -202,6 +214,7 @@ options:
   "access_key": "Specify Access Key to use this bot",
   "proxy": "http://proxy:port",
   "respond_group_message": false,
+  "topic_preview_type": "INTERNAL or TELEGRAPH",
   "share": [
     {
       "name": "notes",

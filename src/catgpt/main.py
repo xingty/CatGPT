@@ -4,6 +4,7 @@ import argparse
 from telebot.async_telebot import AsyncTeleBot
 
 from . import context
+from . import share
 
 
 async def main():

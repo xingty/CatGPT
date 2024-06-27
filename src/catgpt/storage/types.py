@@ -79,6 +79,8 @@ class Profile:
         chat_id: int,
         thread_id: int,
         topic_id: int,
+        preview_url,
+        preview_token,
     ):
         self.uid = uid
         self.model = model
@@ -88,6 +90,8 @@ class Profile:
         self.chat_id = chat_id
         self.thread_id = thread_id
         self.topic_id = topic_id
+        self.preview_url = preview_url
+        self.preview_token = preview_token
 
     def get_key(self):
         return f"{self.uid}-{self.chat_id}-{self.thread_id}"
@@ -95,7 +99,7 @@ class Profile:
     def __repr__(self):
         return (
             f"Profile(uid={self.uid}, model={self.model}, endpoint={self.endpoint}, prompt={self.prompt}, "
-            f"chat_type={self.chat_type}, chat_id={self.chat_id}, thread_id={self.thread_id})"
+            f"chat_type={self.chat_type}, chat_id={self.chat_id}, thread_id={self.thread_id}), preview_url={self.preview_url}"
         )
 
 

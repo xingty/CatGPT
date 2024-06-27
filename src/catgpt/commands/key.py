@@ -1,3 +1,4 @@
+import hashlib
 import hmac
 
 from telebot.async_telebot import AsyncTeleBot

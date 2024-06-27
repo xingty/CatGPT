@@ -54,6 +54,8 @@ class UserProfile:
             chat_id=chat_id,
             thread_id=thread_id,
             topic_id=topic_id,
+            preview_url=None,
+            preview_token=None,
         )
 
         await self.storage.create_profile(profile)

@@ -221,10 +221,12 @@ ENV/
 .pdm-python
 .pdm-build/
 
-data.db
+data*.db
 config.json
 endpoints.json
 sessions/
 logs/*
 test/*
 file::*
+telegraph.json
+conversation_preview.json

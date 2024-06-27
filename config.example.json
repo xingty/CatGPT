@@ -3,6 +3,7 @@
   "access_key": "Specify Access Key to use this bot",
   "proxy": "http://proxy:port",
   "respond_group_message": false,
+  "topic_preview_type": "INTERNAL | TELEGRAPH",
   "share": [
     {
       "name": "share provider name",
@@ -10,6 +11,13 @@
       "repo": "github repo",
       "owner": "your github username",
       "token": "your github personal access token"
+    },
+    {
+      "name": "telegraph",
+      "type": "telegraph",
+      "author": "meiqiu(optional)",
+      "short_name": "meiqiu(optional)",
+      "token": "your telegraph token, it will create a new account if you don't provide one"
     }
   ],
   "endpoints": [
