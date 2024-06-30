@@ -7,9 +7,6 @@ from pathlib import Path
 from ..storage import Datasource, tx, Topic
 from ..storage import types
 
-CURRENT_VERSION = "0.1.0"
-VERSION_CODE = 2406252000
-
 VERSION = [
     {"version_name": "0.1.0", "version_code": 2406252010, "sql_list": []},
     {
@@ -21,6 +18,9 @@ VERSION = [
         ],
     },
 ]
+
+CURRENT_VERSION = VERSION[-1]["version_name"]
+VERSION_CODE = VERSION[-1]["version_code"]
 
 
 def migrate(connection):

@@ -1,6 +1,6 @@
 [project]
 name = "mqgpt"
-version = "0.1.0"
+version = "0.1.1"
 description = "A chatbot built on telegram that integrates OpenAI's API"
 authors = [
     {name = "bigbyto", email = "bigbyto@gmail.com"},
