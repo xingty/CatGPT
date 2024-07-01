@@ -111,8 +111,7 @@ async def show_conversation(
     messages = [
         msg for msg in messages if (msg.role != "system" and msg.chat_id == chat_id)
     ]
-    segments = messages_to_segments(messages)
-    if len(segments) == 0:
+    if len(messages) == 0:
         await bot.send_message(
             chat_id=chat_id,
             text=escape(f"Current topic: **{convo.title}**\n"),
@@ -134,7 +133,7 @@ async def show_conversation(
     ]
 
     if preview_type == Preview.TELEGRAPH:
-        md_content = "\n\n".join(segments)
+        md_content = "\n\n".join([f"## {m.role}\n\n{m.content}" for m in messages])
         html_url = await page_preview.preview_md_text(profile, convo.title, md_content)
         await bot.send_message(
             chat_id=chat_id,
@@ -146,7 +145,14 @@ async def show_conversation(
             parse_mode="MarkdownV2",
         )
     else:
+        segments = messages_to_segments(messages, 3800)
         for content in segments:
+            if not content:
+                continue
+
+            if len(content) > 3900:
+                content = content[:3900] + "..."
+
             reply_msg: Message = await bot.send_message(
                 chat_id=chat_id,
                 text=escape(content),

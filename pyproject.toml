@@ -10,7 +10,7 @@ dependencies = [
     "markdown-it-py==3.0.0",
     "openai==1.6.0",
     "aiohttp==3.9.1",
-    "telegramify-markdown==0.1.4",
+    "telegramify-markdown==0.1.8",
     "google-generativeai==0.7.0",
     "markdown",
     "bs4"

@@ -27,7 +27,7 @@ async def is_mention_me(message: Message) -> bool:
     text = message.text
     for entity in message.entities:
         if entity.type == "mention":
-            who = text[entity.offset: entity.offset + entity.length]
+            who = text[entity.offset : entity.offset + entity.length]
             if who == bot_name:
                 return True
 
@@ -128,12 +128,12 @@ async def handle_message(message: Message, bot: AsyncTeleBot) -> None:
 
 
 async def do_reply(
-        endpoint: Endpoint,
-        model: str,
-        messages: list,
-        reply_msg: Message,
-        bot: AsyncTeleBot,
-        convo: types.Topic,
+    endpoint: Endpoint,
+    model: str,
+    messages: list,
+    reply_msg: Message,
+    bot: AsyncTeleBot,
+    convo: types.Topic,
 ):
     text = ""
     buffered = ""
@@ -142,11 +142,11 @@ async def do_reply(
     text_overflow = False
     tmp_info = f"*{endpoint.name},   {model.lower()}*: \n\n"
     async for chunk in await ask_stream(
-            endpoint,
-            {
-                "model": model,
-                "messages": messages,
-            },
+        endpoint,
+        {
+            "model": model,
+            "messages": messages,
+        },
     ):
         content = chunk["content"]
         if not content:
@@ -291,8 +291,12 @@ def message_check(func):
             if not respond_message and not await is_mention_me(message):
                 return
 
-        uid = f"{message.from_user.id}_{message.chat.id}_{message.message_thread_id or 0}"
-        if message.content_type == "text" and (len(message.text) >= 3000 or uid in queue_mapping):
+        uid = (
+            f"{message.from_user.id}_{message.chat.id}_{message.message_thread_id or 0}"
+        )
+        if message.content_type == "text" and (
+            len(message.text) >= 3000 or uid in queue_mapping
+        ):
             is_int = uid not in queue_mapping
             if not is_int:
                 msg: Message = queue_mapping[uid][0]
@@ -320,4 +324,3 @@ def register(bot: AsyncTeleBot, decorator, provider) -> None:
     bot.register_message_handler(handler, pass_bot=True, content_types=["photo"])
     doc_handler = decorator(message_check(handle_document))
     bot.register_message_handler(doc_handler, pass_bot=True, content_types=["document"])
-    # threading.Thread(target=message_worker).start()
