@@ -291,19 +291,21 @@ def message_check(func):
             if not respond_message and not await is_mention_me(message):
                 return
 
-        uid = str(message.from_user.id)
+        uid = f"{message.from_user.id}_{message.chat.id}_{message.message_thread_id or 0}"
         if message.content_type == "text" and (len(message.text) >= 3000 or uid in queue_mapping):
             is_int = uid not in queue_mapping
-            queue_mapping[uid].append(message)
             if not is_int:
-                return
-
-            await asyncio.sleep(3)
-            messages = queue_mapping[uid]
-            text = "".join([m.text for m in messages])
-            messages[0].text = text
-
-            del queue_mapping[uid]
+                msg: Message = queue_mapping[uid][0]
+                if message.date - msg.date < 2:
+                    queue_mapping[uid].append(message)
+                    return
+            else:
+                queue_mapping[uid].append(message)
+                await asyncio.sleep(3)
+                messages = queue_mapping[uid]
+                text = "".join([m.text for m in messages])
+                messages[0].text = text
+                del queue_mapping[uid]
 
         await func(message, bot)
 
