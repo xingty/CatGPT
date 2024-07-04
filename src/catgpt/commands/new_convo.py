@@ -74,7 +74,7 @@ async def create_convo(
 
     profile.topic_id = convo.tid
     text = await get_profile_text(profile, chat_type)
-    text = "A new topic has been created.\n" + text
+    text = "A new topic has been created.   \n" + text
 
     await bot.send_message(
         chat_id=chat_id,

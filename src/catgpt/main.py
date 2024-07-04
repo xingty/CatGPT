@@ -1,10 +1,9 @@
 import asyncio
 import argparse
 
-from telebot.async_telebot import AsyncTeleBot
+from telebot.async_telebot import AsyncTeleBot, types
 
 from . import context
-from . import share
 
 
 async def main():
@@ -38,7 +37,7 @@ async def main():
 
     await register_commands(bot)
     print("CatGPT is running...")
-    await bot.infinity_polling()
+    await bot.infinity_polling(interval=1)
 
 
 def launch():

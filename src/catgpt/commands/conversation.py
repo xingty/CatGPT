@@ -137,7 +137,7 @@ async def show_conversation(
         html_url = await page_preview.preview_md_text(profile, convo.title, md_content)
         await bot.send_message(
             chat_id=chat_id,
-            text=f"[{convo.title}]({html_url})",
+            text=escape(f"[{convo.title}]({html_url})"),
             reply_to_message_id=last_message_id,
             disable_web_page_preview=False,
             reply_markup=InlineKeyboardMarkup(keyboard),

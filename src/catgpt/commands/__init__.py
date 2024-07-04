@@ -10,7 +10,7 @@ from telebot.types import BotCommand
 from telebot.asyncio_helper import RequestTimeout
 
 from ..context import profiles, config, topic, users
-from ..utils.md2tgmd import escape
+from ..utils.md2tgmd import escape, NEW_LINE
 from ..utils.text import messages_to_segments, decode_message_id, encode_message_id
 from ..utils.prompt import get_prompt
 from .. import share
@@ -187,8 +187,8 @@ async def get_profile_text(profile: types.Profile, chat_type: str):
         if convo:
             convo_title = convo.title
 
-    text = f"current topic: `{convo_title}`\n"
-    text = f"{text}model: `{profile.model}`\nendpoint: `{profile.endpoint}`\nprompt: `{profile.prompt}`"
+    text = f"current topic: `{convo_title}`{NEW_LINE}\n"
+    text = f"{text}model: `{profile.model}`{NEW_LINE}\nendpoint: `{profile.endpoint}`{NEW_LINE}\nprompt: `{profile.prompt}`"
 
     return text
 

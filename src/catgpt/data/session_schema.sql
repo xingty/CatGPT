@@ -50,6 +50,8 @@ create table profile
     chat_id   INTEGER default 0 not null,
     thread_id INTEGER default 0 not null,
     topic_id  INTEGER default 0 not null,
+    preview_url   TEXT,
+    preview_token TEXT,
     unique (uid, chat_id, thread_id)
 );
 

@@ -35,10 +35,9 @@ async def show_conversation_list(
             items = []
         items.append(InlineKeyboardButton(index + 1, callback_data=callback_data))
         if convo.tid == convo_id:
-            current_index = index
-            text += f"**[{index + 1}] {convo.title}**\n"
+            text += f"**[{index + 1}] {convo.title}**   \n"
         else:
-            text += f"[{index+1}] {convo.title}\n"
+            text += f"[{index+1}] {convo.title}   \n"
 
     # text = hint.format(index=current_index + 1, content=text)
     if len(items) > 0:
