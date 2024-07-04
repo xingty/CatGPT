@@ -208,7 +208,7 @@ class TelegraphAPI:
                     ]
 
                 if element.attrs:
-                    tag_dict["attributes"] = element.attrs
+                    tag_dict["attrs"] = element.attrs
                 if element.contents:
                     children = []
                     for child in element.contents:
@@ -219,7 +219,7 @@ class TelegraphAPI:
                     tag_dict["children"] = children
             else:
                 if element.attrs:
-                    tag_dict["attributes"] = element.attrs
+                    tag_dict["attrs"] = element.attrs
                 if element.contents:
                     children = []
                     for child in element.contents:
