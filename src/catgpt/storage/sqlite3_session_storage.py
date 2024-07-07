@@ -17,6 +17,11 @@ VERSION = [
             "alter table profile add preview_token TEXT;",
         ],
     },
+    {
+        "version_name": "0.1.2",
+        "version_code": 2407080300,
+        "sql_list": [],
+    },
 ]
 
 CURRENT_VERSION = VERSION[-1]["version_name"]
