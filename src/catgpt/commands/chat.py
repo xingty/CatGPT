@@ -279,8 +279,70 @@ async def handle_document(message: Message, bot: AsyncTeleBot):
     await handle_message(message, bot)
 
 
-queue_mapping = defaultdict(list)
+class SegmentationHandler:
+    def __init__(self):
+        self.buffers = {}
+        self.MAX_SEGMENTS = 50
+        self.START_MARK = "===segstart"
+        self.END_MARK = "===segend"
+        self.CANCEL_MARK = "===segcancel"
 
+    def _get_content_between_marks(self, text: str) -> str:
+        """Extract content between segmentation marks if they exist"""
+        if self.START_MARK in text and text.endswith(self.END_MARK):
+            start_idx = text.index(self.START_MARK) + len(self.START_MARK)
+            end_idx = text.rindex(self.END_MARK)
+            return text[start_idx:end_idx].strip()
+        return text
+
+    def _is_in_segmentation_mode(self, uid: str) -> bool:
+        return uid in self.buffers
+
+    def process_message(self, message: Message, uid: str) -> tuple[str, bool]:
+        """
+        Process message and return (processed_text, should_handle)
+        where should_handle indicates if the message should be handled by the bot
+        """
+        if message.content_type != "text":
+            return message.text, True
+
+        text = message.text.strip()
+        
+        # Handle single message containing both marks
+        processed_text = self._get_content_between_marks(text)
+        if processed_text != text:
+            return processed_text, True
+
+        # Handle segmentation mode
+        if text.startswith(self.START_MARK):
+            self.buffers[uid] = [text.replace(self.START_MARK, "").strip()]
+            return "", False
+        
+        if text == self.CANCEL_MARK:
+            if self._is_in_segmentation_mode(uid):
+                del self.buffers[uid]
+            return "", False
+
+        if text.endswith(self.END_MARK):
+            if not self._is_in_segmentation_mode(uid):
+                return text, True
+                
+            current_text = text[:-len(self.END_MARK)].strip()
+            if current_text:
+                self.buffers[uid].append(current_text)
+            
+            combined_text = "\n".join(self.buffers[uid])
+            del self.buffers[uid]
+            return combined_text, True
+
+        if self._is_in_segmentation_mode(uid):
+            if len(self.buffers[uid]) < self.MAX_SEGMENTS:
+                self.buffers[uid].append(text)
+            return "", False
+
+        return text, True
+
+segmentation = SegmentationHandler()
 
 def message_check(func):
     async def wrapper(message: Message, bot: AsyncTeleBot):
@@ -291,27 +353,12 @@ def message_check(func):
             if not respond_message and not await is_mention_me(message):
                 return
 
-        uid = (
-            f"{message.from_user.id}_{message.chat.id}_{message.message_thread_id or 0}"
-        )
-        if message.content_type == "text" and (
-            len(message.text) >= 3000 or uid in queue_mapping
-        ):
-            is_int = uid not in queue_mapping
-            if not is_int:
-                msg: Message = queue_mapping[uid][0]
-                if message.date - msg.date < 2:
-                    queue_mapping[uid].append(message)
-                    return
-            else:
-                queue_mapping[uid].append(message)
-                await asyncio.sleep(3)
-                messages = queue_mapping[uid]
-                text = "".join([m.text for m in messages])
-                messages[0].text = text
-                del queue_mapping[uid]
-
-        await func(message, bot)
+        uid = f"{message.from_user.id}_{message.chat.id}_{message.message_thread_id or 0}"
+        
+        processed_text, should_handle = segmentation.process_message(message, uid)
+        if should_handle:
+            message.text = processed_text
+            await func(message, bot)
 
     return wrapper
 
