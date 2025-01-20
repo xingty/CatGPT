@@ -75,9 +75,10 @@ async def display_models(
     context = f"{message_id}:{chat_id}:{uid}"
     keyboard = []
     items = []
+    models = endpoint.models or []
 
-    for model in endpoint.models or []:
-        callback_data = f'{action["name"]}:{model}:{context}'
+    for idx, model in enumerate(models):
+        callback_data = f'{action["name"]}:{idx}:{context}'
         if len(items) == 2:
             keyboard.append(items)
             items = []
@@ -116,15 +117,27 @@ async def do_model_change(
         return
 
     profile = await profiles.load(uid, chat_id, message.message_thread_id)
-    await _do_model_change(
-        bot=bot,
-        profile=profile,
-        model=operation,
-        msg_ids=msg_ids + [message.message_id],
-        chat_id=chat_id,
-        uid=uid,
-        thread_id=message.message_thread_id,
-    )
+    endpoint = config.get_endpoint(profile.endpoint or "None")
+    if endpoint is None:
+        return
+    
+    try:
+        model_idx = int(operation)
+        models = endpoint.models or []
+        if 0 <= model_idx < len(models):
+            model = models[model_idx]
+            await _do_model_change(
+                bot=bot,
+                profile=profile,
+                model=model,
+                msg_ids=msg_ids + [message.message_id],
+                chat_id=chat_id,
+                uid=uid,
+                thread_id=message.message_thread_id,
+            )
+    except ValueError:
+        # 处理operation不是数字的情况
+        pass
 
 
 async def _do_model_change(
