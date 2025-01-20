@@ -4,12 +4,9 @@ CatGPT is a Telegram bot that integrates with OpenAI's api for people who like t
 
 ### Features
 * Multiple topics
-  
- * Multiple endpoints
-
- * Powerful and easy to use
-
-
+* Multiple endpoints
+* Powerful and easy to use
+* Long Text Segmentation Support
 
 ### Installation
 
@@ -277,11 +274,42 @@ Each topic in a group has its own profile, it means that all configuration in to
 2. Use the command `/newbot` to create a new bot
 3. Follows the guideline of BotFather and then get the access token of your bot
 
+### Text Segmentation
+  
+When you need to send a very long message that exceeds Telegram's message length limit, you can use the segmentation feature:
 
+```
+===segstart
+Your first part of the message...
+Second part...
+Third part...
+===segend
+```
+
+You can also split your message into multiple messages:
+
+```
+===segstart
+First message
+
+[Send as separate message]
+Second message
+
+[Send as separate message]
+Last message part
+===segend
+```
+
+The bot will combine all segments into one message before processing.
+
+To cancel an ongoing segmentation, use:
+```
+===segcancel
+```
 
 ### Thanks
 
-The idea of this project was inspired by YiHong0618's **[tg_bot_collections](https://github.com/yihong0618/tg_bot_collections)**, thanks a lot for [YiHong0618](https://github.com/yihong0618).
+The idea of this project was inspired by YiHong0618's **[tg_bot_collections](https://github.com/yihong0618/tg_bot_collections)**
 
 
 
