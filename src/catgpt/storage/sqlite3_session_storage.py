@@ -138,9 +138,10 @@ class Sqlite3TopicStorage(types.TopicStorage, tx.Transactional):
         transaction = await self.retrieve_transaction()
         conn = transaction.connection
         tuples = []
+        text_types = [0, 5]   # text, reasoning_content
         for m in message:
             content = m.content
-            if m.message_type > 0:
+            if m.message_type not in text_types:
                 content = f"{m.media_url},{content}"
 
             t = (
@@ -171,10 +172,11 @@ class Sqlite3TopicStorage(types.TopicStorage, tx.Transactional):
         tuples = (
             content,
             message.message_id,
-            message.topic_id,
-            message.message_type,
             message.user_id,
             message.chat_id,
+            message.topic_id,
+            message.reply_id,
+            message.message_type,
         )
         sql = "insert into message_holder (content, message_id, user_id, chat_id, topic_id, reply_id, message_type) values (?,?,?,?,?,?,?)"
         conn.execute(sql, tuples)

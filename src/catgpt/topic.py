@@ -18,6 +18,7 @@ class Topic:
         topic_id: int,
         user_message: tg_types.Message,
         assistant_message: tg_types.Message,
+        reasoning_content: str
     ):
         msg_type = MessageType[user_message.content_type.upper()]
         msg = types.Message(
@@ -33,8 +34,22 @@ class Topic:
             msg.media_url = user_message.text
             msg.content = user_message.caption
 
-        messages = [
-            msg,
+        messages = [msg]
+
+        if len(reasoning_content) > 0:
+            messages.append(
+                types.Message(
+                    role="assistant",
+                    content=reasoning_content,
+                    message_id=assistant_message.message_id,
+                    chat_id=assistant_message.chat.id,
+                    ts=assistant_message.date + 1,
+                    topic_id=topic_id,
+                    message_type=MessageType.REASONING_CONTENT.value,
+                )
+            )
+
+        messages.append(
             types.Message(
                 role="assistant",
                 content=assistant_message.text,
@@ -42,8 +57,8 @@ class Topic:
                 chat_id=assistant_message.chat.id,
                 ts=assistant_message.date + 1,
                 topic_id=topic_id,
-            ),
-        ]
+            )
+        )
 
         await self.storage.append_message(topic_id, messages)
 

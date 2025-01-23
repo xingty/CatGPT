@@ -124,6 +124,7 @@ class MessageType(enum.Enum):
     AUDIO = 2
     VIDEO = 3
     DOCUMENT = 4
+    REASONING_CONTENT = 5
 
     def is_text(self):
         return self == MessageType.TEXT or self == MessageType.DOCUMENT

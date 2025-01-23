@@ -63,10 +63,21 @@ async def ask_stream(endpoint: Endpoint, body: dict):
             continue
 
         choice = chunk.choices[0]
+        reasoning = False
+        # compatible with Deepseek
+        if hasattr(choice.delta, 'reasoning_content'):
+            reasoning = choice.delta.reasoning_content
+
+        if reasoning:
+            c = choice.delta.reasoning_content
+        else:
+            c = choice.delta.content
+
         yield {
-            "role": choice.delta.role,
-            "content": choice.delta.content,
+            "role": choice.delta.role or "assistant",
+            "content": c,
             "finished": choice.finish_reason,
+            "reasoning": reasoning,
         }
 
 

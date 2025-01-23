@@ -11,8 +11,6 @@ from ..utils.md2tgmd import escape
 from ..storage import types
 from ..utils import tg_image
 
-from collections import defaultdict
-
 import time
 import asyncio
 import base64
@@ -89,7 +87,7 @@ async def handle_message(message: Message, bot: AsyncTeleBot) -> None:
             thread_id=message.message_thread_id,
         )
 
-    messages = [] + convo.messages
+    messages = [m for m in convo.messages if m.message_type != MessageType.REASONING_CONTENT.value]
     msg_type = MessageType[message.content_type.upper()]
     prompt_message = types.Message(
         role="user",
@@ -109,9 +107,9 @@ async def handle_message(message: Message, bot: AsyncTeleBot) -> None:
 
     text = ""
     try:
-        text = await do_reply(endpoint, model, messages, reply_msg, bot, convo)
+        text, reasoning_content = await do_reply(endpoint, model, messages, reply_msg, bot, convo)
         reply_msg.text = text
-        await topic.append_messages(convo_id, message, reply_msg)
+        await topic.append_messages(convo_id, message, reply_msg, reasoning_content)
 
         try:
             if convo.generate_title:
@@ -141,6 +139,9 @@ async def do_reply(
     timeout = 1.8
     text_overflow = False
     tmp_info = f"*{endpoint.name},   {model.lower()}*: \n\n"
+    reasoning_content = ""
+    newline = False
+
     async for chunk in await ask_stream(
         endpoint,
         {
@@ -149,8 +150,14 @@ async def do_reply(
         },
     ):
         content = chunk["content"]
-        if not content:
-            print("the content of the chunk is empty", chunk)
+        if chunk.get("reasoning"):
+            reasoning_content += content
+            newline = True
+        elif newline:
+            content = "\n\n---\n" + content
+            newline = False
+        elif not content:
+            print("empty chunk's content", chunk)
             continue
 
         buffered += content
@@ -224,7 +231,10 @@ async def do_reply(
             reply_to_message_id=msg.message_id,
         )
 
-    return text + buffered
+    fullText = text + buffered
+    if len(reasoning_content) > 0:
+        fullText = fullText[len(reasoning_content) + 6:]
+    return fullText, reasoning_content
 
 
 async def do_generate_title(convo: types.Topic, messages: list, uid: int, text: str):
