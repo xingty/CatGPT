@@ -17,7 +17,9 @@ SHORT_NAME = {
     "gpt4o": "gpt-4o",
     "4o": "gpt-4o",
     "g2": "gemini-2.0-flash-exp",
-    "g2think": "gemini-2.0-flash-thinking-exp-1219"
+    "g2think": "gemini-2.0-flash-thinking-exp-01-21",
+    "ds": "deepseek-chat",
+    "r1": "deepseek-reasoner",
 }
 
 
@@ -122,7 +124,7 @@ async def do_model_change(
     endpoint = config.get_endpoint(profile.endpoint or "None")
     if endpoint is None:
         return
-    
+
     try:
         model_idx = int(operation)
         models = endpoint.models or []

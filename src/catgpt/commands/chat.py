@@ -307,7 +307,7 @@ class SegmentationHandler:
             return message.text, True
 
         text = message.text.strip()
-        
+
         # Handle single message containing both marks
         processed_text = self._get_content_between_marks(text)
         if processed_text != text:
@@ -317,7 +317,7 @@ class SegmentationHandler:
         if text.startswith(self.START_MARK):
             self.buffers[uid] = [text.replace(self.START_MARK, "").strip()]
             return "", False
-        
+
         if text == self.CANCEL_MARK:
             if self._is_in_segmentation_mode(uid):
                 del self.buffers[uid]
@@ -326,11 +326,11 @@ class SegmentationHandler:
         if text.endswith(self.END_MARK):
             if not self._is_in_segmentation_mode(uid):
                 return text, True
-                
-            current_text = text[:-len(self.END_MARK)].strip()
+
+            current_text = text[: -len(self.END_MARK)].strip()
             if current_text:
                 self.buffers[uid].append(current_text)
-            
+
             combined_text = "\n".join(self.buffers[uid])
             del self.buffers[uid]
             return combined_text, True
@@ -342,7 +342,9 @@ class SegmentationHandler:
 
         return text, True
 
+
 segmentation = SegmentationHandler()
+
 
 def message_check(func):
     async def wrapper(message: Message, bot: AsyncTeleBot):
@@ -353,8 +355,10 @@ def message_check(func):
             if not respond_message and not await is_mention_me(message):
                 return
 
-        uid = f"{message.from_user.id}_{message.chat.id}_{message.message_thread_id or 0}"
-        
+        uid = (
+            f"{message.from_user.id}_{message.chat.id}_{message.message_thread_id or 0}"
+        )
+
         processed_text, should_handle = segmentation.process_message(message, uid)
         if should_handle:
             message.text = processed_text
