@@ -14,6 +14,27 @@ async def get_convo(uid, chat_id, thread_id) -> types.Topic:
     return convo
 
 
+async def get_messages_to_revoke(messages: list[types.Message], chat_id: int, count: int = None) -> list[types.Message]:
+    """Get messages to revoke based on count or until last user message"""
+    result = []
+    
+    for msg in reversed(messages):
+        if msg.chat_id != chat_id:
+            continue
+            
+        result.insert(0, msg)
+        
+        # If count specified, just take that many messages
+        if count is not None:
+            if len(result) >= count:
+                break
+        # If no count, take messages until we find a user message
+        elif msg.role == "user":
+            break
+            
+    return result
+
+
 async def handle_revoke(message: Message, bot: AsyncTeleBot):
     uid = message.from_user.id
     convo = await get_convo(uid, message.chat.id, message.message_thread_id)
@@ -21,26 +42,23 @@ async def handle_revoke(message: Message, bot: AsyncTeleBot):
         await bot.reply_to(message, "Please select a topic to use.")
         return
 
-    messages: list[types.Message] = convo.messages or []
-    revoke_messages = []
-    for m in reversed(messages):
-        if m.chat_id == message.chat.id:
-            revoke_messages.insert(0, m)
-        if len(revoke_messages) == 2:
-            break
+    # Parse count from command if provided
+    try:
+        count = int(message.text.split()[1]) if len(message.text.split()) > 1 else None
+    except ValueError:
+        count = None
 
-    if len(revoke_messages) != 2:
-        await bot.reply_to(
-            message, "Could not find any message.py in current conversation"
-        )
+    messages: list[types.Message] = convo.messages or []
+    revoke_messages = await get_messages_to_revoke(messages, message.chat.id, count)
+
+    if not revoke_messages:
+        await bot.reply_to(message, "Could not find any messages in current conversation")
         return
 
     context = f"{message.message_id}:{message.chat.id}:{message.from_user.id}"
     keyboard = [
         [
-            InlineKeyboardButton(
-                "Yes", callback_data=f'{action["name"]}:yes:{context}'
-            ),
+            InlineKeyboardButton("Yes", callback_data=f'{action["name"]}:yes:{context}'),
             InlineKeyboardButton("No", callback_data=f'{action["name"]}:no:{context}'),
         ],
     ]
@@ -49,15 +67,13 @@ async def handle_revoke(message: Message, bot: AsyncTeleBot):
     for m in revoke_messages:
         content += f"### {m.role}\n{m.content}\n\n"
 
-    content = escape(
-        f"Are you sure? This operation will revoke the messages below:\n\n{content}"
-    )
+    content = escape(f"Are you sure? This operation will revoke the messages below:\n\n{content}")
     if len(content) > 4096:
         content = content[0:4093] + "..."
 
     await bot.send_message(
         chat_id=message.chat.id,
-        text=escape(content),
+        text=content,
         parse_mode="MarkdownV2",
         reply_markup=InlineKeyboardMarkup(keyboard),
         message_thread_id=message.message_thread_id,
@@ -87,30 +103,36 @@ async def do_revoke(
         )
         return
 
-    messages: list[types.Message] = convo.messages or []
-    revoke_message_ids = []
-    i = len(messages) - 1
-    while i >= 0 and len(revoke_message_ids) < 2:
-        if messages[i].chat_id == chat_id:
-            revoke_message_ids.append(messages.pop(i).message_id)
-        i -= 1
+    # Try to get count from original revoke command
+    try:
+        orig_msg = await bot.get_message(chat_id, message_id)
+        count = int(orig_msg.text.split()[1]) if len(orig_msg.text.split()) > 1 else None
+    except (ValueError, AttributeError):
+        count = None
 
-    if len(revoke_message_ids) != 2:
+    messages: list[types.Message] = convo.messages or []
+    revoke_messages = await get_messages_to_revoke(messages, chat_id, count)
+    
+    if not revoke_messages:
         await bot.send_message(
             chat_id=chat_id,
-            text="Could not find any message.py in current conversation",
+            text="Could not find any messages in the current conversation",
             reply_to_message_id=message_id,
             message_thread_id=message.message_thread_id,
         )
         return
 
-    await topic.remove_messages(convo.tid, revoke_message_ids)
-    revoke_message_ids.append(message.message_id)
-    await bot.delete_messages(chat_id, revoke_message_ids)
+    # Remove messages from conversation
+    message_ids = [m.message_id for m in revoke_messages]
+    await topic.remove_messages(convo.tid, message_ids)
+    
+    # Delete messages from chat
+    message_ids.append(message.message_id)
+    await bot.delete_messages(chat_id, message_ids)
 
     await bot.send_message(
         chat_id=chat_id,
-        text="Messages revoked",
+        text=f"{len(message_ids)-1} messages revoked",
         reply_to_message_id=message_id,
         message_thread_id=message.message_thread_id,
     )
