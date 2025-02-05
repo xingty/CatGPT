@@ -1,5 +1,6 @@
 import enum
 import random
+from typing import List
 
 MODEL_MAPPING = {
     "gpt-4o": ["text", "photo"],
@@ -75,11 +76,11 @@ class Configuration:
         self.access_key: str = ""
         self.proxy_url: str = ""
         self.share_info = None
-        self.endpoints: [Endpoint] = []
+        self.endpoints: List[Endpoint] = []
         self.respond_group_message = False
         self.topic_preview = Preview.INTERNAL
 
-    def get_endpoints(self) -> [Endpoint]:
+    def get_endpoints(self) -> List[Endpoint]:
         return self.endpoints
 
     def get_default_endpoint(self) -> Endpoint:
@@ -96,7 +97,7 @@ class Configuration:
 
         return None
 
-    def get_title_endpoint(self) -> [Endpoint]:
+    def get_title_endpoint(self) -> List[Endpoint]:
         endpoints = self.get_endpoints()
 
         endpoints = [endpoint for endpoint in endpoints if endpoint.generate_title]

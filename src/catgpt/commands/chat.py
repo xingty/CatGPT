@@ -237,8 +237,8 @@ async def do_reply(
     return fullText, reasoning_content
 
 
-async def do_generate_title(convo: types.Topic, messages: list, uid: int, text: str):
-    endpoint = config.get_title_endpoint()[0]
+async def do_generate_title(convo: types.Topic, messages: list, uid: int, text: str, current: Endpoint):
+    endpoint = current if current.generate_title else config.get_title_endpoint()[0]
     if endpoint is None:
         return
 
