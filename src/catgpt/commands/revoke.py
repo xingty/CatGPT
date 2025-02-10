@@ -14,16 +14,18 @@ async def get_convo(uid, chat_id, thread_id) -> types.Topic:
     return convo
 
 
-async def get_messages_to_revoke(messages: list[types.Message], chat_id: int, count: int = None) -> list[types.Message]:
+async def get_messages_to_revoke(
+    messages: list[types.Message], chat_id: int, count: int = None
+) -> list[types.Message]:
     """Get messages to revoke based on count or until last user message"""
     result = []
-    
+
     for msg in reversed(messages):
         if msg.chat_id != chat_id:
             continue
-            
+
         result.insert(0, msg)
-        
+
         # If count specified, just take that many messages
         if count is not None:
             if len(result) >= count:
@@ -31,7 +33,7 @@ async def get_messages_to_revoke(messages: list[types.Message], chat_id: int, co
         # If no count, take messages until we find a user message
         elif msg.role == "user":
             break
-            
+
     return result
 
 
@@ -52,13 +54,17 @@ async def handle_revoke(message: Message, bot: AsyncTeleBot):
     revoke_messages = await get_messages_to_revoke(messages, message.chat.id, count)
 
     if not revoke_messages:
-        await bot.reply_to(message, "Could not find any messages in current conversation")
+        await bot.reply_to(
+            message, "Could not find any messages in current conversation"
+        )
         return
 
     context = f"{message.message_id}:{message.chat.id}:{message.from_user.id}"
     keyboard = [
         [
-            InlineKeyboardButton("Yes", callback_data=f'{action["name"]}:yes:{context}'),
+            InlineKeyboardButton(
+                "Yes", callback_data=f'{action["name"]}:yes:{context}'
+            ),
             InlineKeyboardButton("No", callback_data=f'{action["name"]}:no:{context}'),
         ],
     ]
@@ -67,7 +73,9 @@ async def handle_revoke(message: Message, bot: AsyncTeleBot):
     for m in revoke_messages:
         content += f"### {m.role}\n{m.content}\n\n"
 
-    content = escape(f"Are you sure? This operation will revoke the messages below:\n\n{content}")
+    content = escape(
+        f"Are you sure? This operation will revoke the messages below:\n\n{content}"
+    )
     if len(content) > 4096:
         content = content[0:4095]
 
@@ -106,13 +114,15 @@ async def do_revoke(
     # Try to get count from original revoke command
     try:
         orig_msg = await bot.get_message(chat_id, message_id)
-        count = int(orig_msg.text.split()[1]) if len(orig_msg.text.split()) > 1 else None
+        count = (
+            int(orig_msg.text.split()[1]) if len(orig_msg.text.split()) > 1 else None
+        )
     except (ValueError, AttributeError):
         count = None
 
     messages: list[types.Message] = convo.messages or []
     revoke_messages = await get_messages_to_revoke(messages, chat_id, count)
-    
+
     if not revoke_messages:
         await bot.send_message(
             chat_id=chat_id,
@@ -125,7 +135,7 @@ async def do_revoke(
     # Remove messages from conversation
     message_ids = [m.message_id for m in revoke_messages]
     await topic.remove_messages(convo.tid, message_ids)
-    
+
     # Delete messages from chat
     message_ids.append(message.message_id)
     await bot.delete_messages(chat_id, message_ids)

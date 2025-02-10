@@ -16,9 +16,10 @@ SHORT_NAME = {
     "0409": "gpt-4-turbo-2024-04-09",
     "gpt4o": "gpt-4o",
     "4o": "gpt-4o",
-    "g2": "gemini-2.0-flash-exp",
+    "g2": "gemini-2.0-flash",
     "g2think": "gemini-2.0-flash-thinking-exp-01-21",
-    "ds": "deepseek-chat",
+    "g2pro": "gemini-2.0-pro-exp-02-05",
+    "v3": "deepseek-chat",
     "r1": "deepseek-reasoner",
 }
 

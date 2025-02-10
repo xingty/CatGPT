@@ -18,7 +18,7 @@ class Topic:
         topic_id: int,
         user_message: tg_types.Message,
         assistant_message: tg_types.Message,
-        reasoning_content: str
+        reasoning_content: str,
     ):
         msg_type = MessageType[user_message.content_type.upper()]
         msg = types.Message(

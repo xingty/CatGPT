@@ -87,7 +87,11 @@ async def handle_message(message: Message, bot: AsyncTeleBot) -> None:
             thread_id=message.message_thread_id,
         )
 
-    messages = [m for m in convo.messages if m.message_type != MessageType.REASONING_CONTENT.value]
+    messages = [
+        m
+        for m in convo.messages
+        if m.message_type != MessageType.REASONING_CONTENT.value
+    ]
     msg_type = MessageType[message.content_type.upper()]
     prompt_message = types.Message(
         role="user",
@@ -107,13 +111,15 @@ async def handle_message(message: Message, bot: AsyncTeleBot) -> None:
 
     text = ""
     try:
-        text, reasoning_content = await do_reply(endpoint, model, messages, reply_msg, bot, convo)
+        text, reasoning_content = await do_reply(
+            endpoint, model, messages, reply_msg, bot, convo
+        )
         reply_msg.text = text
         await topic.append_messages(convo_id, message, reply_msg, reasoning_content)
 
         try:
             if convo.generate_title:
-                await do_generate_title(convo, messages, uid, text)
+                await do_generate_title(convo, messages, uid, text, endpoint)
         except Exception as ie:
             print(ie)
     except Exception as e:
@@ -211,7 +217,10 @@ async def do_reply(
                 text=url,
                 disable_web_page_preview=False,
             )
-            return msg_text
+
+            if len(reasoning_content) > 0:
+                msg_text = fullText[len(reasoning_content) + 6 :]
+            return msg_text, reasoning_content
 
         text_overflow = True
         msg_text = escape(text)
@@ -233,11 +242,14 @@ async def do_reply(
 
     fullText = text + buffered
     if len(reasoning_content) > 0:
-        fullText = fullText[len(reasoning_content) + 6:]
+        fullText = fullText[len(reasoning_content) + 6 :]
+
     return fullText, reasoning_content
 
 
-async def do_generate_title(convo: types.Topic, messages: list, uid: int, text: str, current: Endpoint):
+async def do_generate_title(
+    convo: types.Topic, messages: list, uid: int, text: str, current: Endpoint
+):
     endpoint = current if current.generate_title else config.get_title_endpoint()[0]
     if endpoint is None:
         return

@@ -138,7 +138,7 @@ class Sqlite3TopicStorage(types.TopicStorage, tx.Transactional):
         transaction = await self.retrieve_transaction()
         conn = transaction.connection
         tuples = []
-        text_types = [0, 5]   # text, reasoning_content
+        text_types = [0, 5]  # text, reasoning_content
         for m in message:
             content = m.content
             if m.message_type not in text_types:
