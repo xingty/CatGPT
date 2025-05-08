@@ -67,9 +67,13 @@ async def ask_stream(endpoint: Endpoint, body: dict):
         # compatible with Deepseek
         if hasattr(choice.delta, "reasoning_content"):
             reasoning = choice.delta.reasoning_content
+        
+        # compatible with OpenRouter
+        if hasattr(choice.delta, "reasoning"):
+            reasoning = choice.delta.reasoning
 
         if reasoning:
-            c = choice.delta.reasoning_content
+            c = reasoning
         else:
             c = choice.delta.content
 
