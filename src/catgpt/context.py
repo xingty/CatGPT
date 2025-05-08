@@ -1,3 +1,4 @@
+from typing import Optional
 from telebot.async_telebot import AsyncTeleBot, asyncio_helper
 
 from pathlib import Path
@@ -19,7 +20,8 @@ group_config: GroupConfig | None = None
 profiles: UserProfile | None = None
 users: Users | None = None
 topic: Topic | None = None
-bot: AsyncTeleBot | None = None
+# bot: AsyncTeleBot | None = None
+bot: AsyncTeleBot
 bot_name = None
 page_preview: PagePreview | None = None
 
@@ -107,5 +109,8 @@ async def init(options):
 async def get_bot_name():
     global bot_name
     if bot_name is None:
-        bot_name = "@" + (await bot.get_me()).username
+        username: Optional[str] = (await bot.get_me()).username
+        if username is not None:
+            bot_name = "@" + username
+        # bot_name = "@" + (await bot.get_me()).username
     return bot_name
